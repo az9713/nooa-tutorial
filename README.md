@@ -3,6 +3,15 @@
 > and docs under [`docs/`](docs/). It is not affiliated with or endorsed by NVIDIA. For the canonical,
 > maintained source, go to the [upstream repository](https://github.com/NVIDIA-NeMo/labs-OO-Agents).
 
+### 📄 Tutorial pages (rendered)
+
+| Page | View |
+| --- | --- |
+| Projects to build on NOOA | **[Open ↗](https://az9713.github.io/nooa-tutorial/nooa-project-ideas.html)** |
+| Implementation plan — Project 03: golden-trajectory regression CI | **[Open ↗](https://az9713.github.io/nooa-tutorial/nooa-project-03-plan.html)** |
+
+<sub>Served by GitHub Pages from [`docs/`](docs/).</sub>
+
 <div align="center">
 
 <br />
