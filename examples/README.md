@@ -579,3 +579,5 @@ Beyond the numbered quickstart, [`advanced/`](advanced/) contains focused demos 
 - [`tracing_langfuse.py`](advanced/tracing_langfuse.py), [`tracing_otlp.py`](advanced/tracing_otlp.py), [`tracing_phoenix.py`](advanced/tracing_phoenix.py) — export traces to third-party backends
 
 And [`quickstart/`](quickstart/) also contains a few beyond-numbered examples: `12_memory.py`, `13_multimodal.py`, `14_atif_trajectory.py`, `15_nemo_relay.py`.
+
+[`portfolio/`](portfolio/) is a worked end-to-end demo rather than a mechanic: an agent holding a live `DataFrame`, broker and price feed as typed fields, analysed by the model writing pandas straight against those objects, with a position cap enforced by a `MethodPrecondition` / `MethodPostcondition` pair. Ships 10 frozen tests that need no API key. See [`portfolio/README.md`](portfolio/README.md).

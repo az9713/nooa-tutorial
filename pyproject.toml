@@ -216,6 +216,7 @@ testpaths = [
     "packages/nooa-cli/tests",
     "packages/nooa-bench/tests",
     "tests/trace_explorer",
+    "examples/portfolio/tests",
 ]
 pythonpath = [
     "src",
