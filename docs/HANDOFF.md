@@ -69,16 +69,15 @@ of it — see "Git topology", which is the one thing to get right before touchin
 missing is a live run that ends in a cap-compliant plan, and the HTML explainer that needs those
 traces. Two sub-tasks, in order:
 
-1. **Get one clean live run.** A run with `max_retries=6` was still in flight at session end,
-   writing to WSL `/tmp/live2.txt` (survives `/clear`, not a reboot). Check it first:
-   ```bash
-   wsl -d Ubuntu -- bash -lc 'grep -hE "^Submitted|^Plan:|GenerationError|max_iterations" /tmp/live2.txt'
-   ```
-   If it failed, the blocker is *model reasoning, not plumbing*: `qwen2.5:7b` equalises the three
-   over-cap names against each other (all land on 25.1%) instead of across all eight holdings.
-   Options, cheapest first: strengthen the docstring hint about the shrinking denominator; raise
-   `max_retries` again; try `llama3.1:8b` or `qwen3:8b`; or an API key with credits (the
-   `OPENAI_API_KEY` in the env is **out of credits** — confirmed 2026-08-04).
+1. **Get one clean live run.** Two *plumbing* faults were found and fixed on 2026-08-04 — the
+   4096-token context window and the model-switch stall. Both are written up under "Project 01 —
+   where the live run got to"; read that before touching anything, because the previous version of
+   this file blamed model reasoning and was wrong. What is left really is the model: it has to write
+   a converging fixed-point loop. Options, cheapest first: reword the `propose_rebalance` docstring;
+   try `llama3.1:8b` or `qwen3:8b`; or an API key with credits (the `OPENAI_API_KEY` in the env is
+   **out of credits** — confirmed 2026-08-04). **Do not simply raise `max_retries`** — at a
+   too-small window that makes things actively worse, and it is what the last two sessions wasted
+   time on.
 2. **Write `docs/nooa-project-01-explained.html`** in the style of `nooa-project-03-explained.html`
    (layered: plain-language boxes + exhaustive walkthrough), then **add a README table row** or
    nobody will find it. Run the HTML anchor checker afterwards (see scratch section).
@@ -99,7 +98,16 @@ Parallel/backup tracks if 01 blocks:
 
 ## Project 01 — where the live run got to (2026-08-04)
 
-**The mechanism works end to end against a real model. The model's arithmetic is the blocker.**
+**The mechanism works end to end against a real model. Two plumbing faults were misdiagnosed as
+model arithmetic; both are now fixed. A third blocker — the model writing a converging loop —
+is real and still open.**
+
+> **WAS (superseded 2026-08-04):** this section used to open "The model's arithmetic is the
+> blocker" and recommended raising `max_retries`. That was wrong on both counts. Ollama was serving
+> a 4096-token window while the *opening* prompt was already ~2300 tokens, so each retry pushed the
+> conversation further past the limit and Ollama dropped text from the **front** — deleting the cap
+> instructions and tool definitions the model was being judged against. More retries made it worse.
+> See "Ollama's default context window" in the gotchas.
 
 Best run so far (`qwen2.5:7b`, `max_retries=3`): the model called `execute_python`, wrote pandas
 against the real in-memory frame, built a `RebalancePlan` in code, and called `return_result` from
@@ -157,6 +165,20 @@ bug below for why.
   rubber-stamp this entry predicted. Always run it with `-rs` and read the skip reason; "3 passed"
   is not evidence that CodeAct works on Ollama. This is why `examples/portfolio/tests/test_live.py`
   fails rather than skips.
+- **The live run has no HTTP timeout, so a stall is indistinguishable from slow work.** A run was
+  found 1h36m in with 90 ms of total CPU and an idle ESTABLISHED socket; `demo.py` prints nothing
+  between the opening table and the final plan, so there was no way to tell. Runs are currently
+  bounded with a shell `timeout -s INT 2700`, which is a wrapper, not a fix — `CompletionClient`
+  takes an `http_config` with real timeout settings. **That 96-minute stall is still unexplained**:
+  the model-switch stall above accounts for minutes, not hours, and closing it out needs the Ollama
+  server log, which nobody has read yet.
+- **`qwen2.5:7b` gets the units wrong, unprompted.** From a recorded live trace it computes
+  `shares_to_sell = (weight - cap) * self.total_value()` — a *dollar* amount — and passes it
+  straight into `Order(shares=...)`, never dividing by `self.prices.last(symbol)`. Open judgement
+  call: hint at it in the docstring, or leave it as an honest demonstration of what the
+  postcondition exists to catch.
+- **`max_retries=6`'s justifying comment (`analyst.py:108-111`) rests on a falsified premise.** It
+  assumes more rounds help. At 4096 tokens they hurt. Whether 6 is right at 16384 is untested.
 - **Latent, not a bug:** the record/replay round-trip is lossy in *type* — `content` goes in as a
   Pydantic model, comes back as a JSON string. Harmless today because `PredictStrategy` re-parses.
   If any strategy ever branched on `type(response.content)`, replay would silently diverge. Pinned
@@ -202,6 +224,38 @@ bug below for why.
   (986 MB). Start with `OLLAMA_HOST=0.0.0.0`; from WSL use the gateway IP from
   `ip route show default` (was `172.26.16.1`), **not** localhost. Then
   `OLLAMA_API_BASE=http://172.26.16.1:11434 uv run --frozen pytest packages/nooa-bench/tests/test_live_ollama.py -m integration`.
+- **Ollama's default context window is 4096 and it silently truncates. This was the real project-01
+  blocker, not model reasoning.** `/api/ps` reports `context_length` for a loaded model — check it.
+  The opening CodeAct prompt for `PortfolioAnalyst` is already **~2277 tokens** (measured: 9,108
+  chars over 6 messages), and each retry appends the rejected plan plus its pandas stdout. Past the
+  limit Ollama drops from the *front*, which is exactly where `<execution_context>`, the tool
+  definitions and the cap instructions live — so the retry loop deletes the rules it is being judged
+  against. **Fix:** `CompletionClient(model=..., api_base=..., num_ctx=16384)`. `**config` is
+  forwarded to litellm, and `num_ctx` is a real field on litellm's `OllamaChatConfig`
+  (`llms/ollama/chat/transformation.py:95`); `litellm.drop_params = True` does *not* eat it.
+  Verified by loading the **stock** `qwen2.5:7b` (digest `845dbda0…`) and reading back
+  `"context_length":16384`. A hand-built `ollama create ... PARAMETER num_ctx` model also works but
+  is not needed — do not ship one in a tutorial, readers will not have it.
+  **Measure the prompt offline instead of guessing:** subclass the *fake* client
+  (`examples/portfolio/tests/conftest.py::RecordingLLM`), run the agent with no scripted responses,
+  and sum `len(str(m["content"]))` over the recorded messages. Seconds, no GPU, no network.
+- **A stalled live run is usually Ollama refusing to switch models, not a dead request.** Ollama will
+  not evict a resident model to load a different one until the incumbent's keep-alive expires. While
+  it waits it accepts your TCP connection, reads the request, and says *nothing* — no error, no
+  queue notice. The client sits in `do_epoll_wait` with an ESTABLISHED socket and, since nothing sets
+  an HTTP timeout, waits forever. Diagnosis: `ss -tnp | grep 11434` (established, both queues 0) plus
+  `curl /api/ps` showing a *different* model loaded. Fix in seconds with
+  `curl .../api/generate -d '{"model":"<incumbent>","keep_alive":0}'` → `done_reason: unload`.
+  Avoid it entirely by not switching models mid-session.
+- **`pkill -f demo.py` kills itself.** The pattern matches `pkill`'s own command line, so it can die
+  before killing the target and report success. This produced two concurrent runs fighting over one
+  Ollama instance for five minutes, and readings that made no sense. **Kill by PID**
+  (`ps -o pid,etime,cmd -C python3 --no-headers`, then `kill -9 <pid>`), and verify the process is
+  gone rather than trusting the exit code.
+- **Shell variables do not survive the trip into `wsl -- bash -lc '...'` from this harness.**
+  `$(seq 1 60)` and `$n` arrive empty or mangled (`syntax error near unexpected token`,
+  `[: -lt: unary operator expected`). Write poll loops with literal word lists —
+  `for i in 1 2 3 4 5; do ...; done` — and no variable references inside.
 - **NOOA's visibility system cannot gate a method at runtime.** `src/nooa/_visible.py` is an explicit
   no-op; `hidden` is a static `Annotated[...]` marker. Runtime gating is `MethodPrecondition` /
   `MethodPostcondition` + `InvariantError` in `src/nooa/strategy_validation.py`. **Directly relevant
@@ -250,6 +304,19 @@ record is the harness itself plus the HTML docs.
   Worth 20 lines any time you need to know what the model actually sees; far faster than reading
   `codeact.py`. The same idea is committed and reusable as
   `examples/portfolio/tests/conftest.py::RecordingLLM` (`.text()` flattens every message).
+- **Prompt-size meter** (`ctx_size.py`) — ~30 lines. Insert `examples/portfolio` and its `tests` dir
+  on `sys.path`, build `PortfolioAnalyst` with `RecordingLLM(scripted_responses=[])`, `await
+  propose_rebalance(...)` inside a `try` (it ends in `GenerationError` — that is fine), then for each
+  recorded message list print `len(msgs)` and `sum(len(str(m["content"])))`. Prints
+  `prompt 0: 6 messages, 9108 chars, ~2277 tokens`. This is what caught the 4096-window bug in
+  seconds after two sessions of blaming the model. Run it after any change to `analyst.py`'s fields
+  or docstring.
+- **Live tracer** (`trace_live.py`) — ~60 lines, the single most useful thing built this session.
+  Subclass the *real* `CompletionClient`, override `acall` to append the message count, char count,
+  the last inbound message and `resp.content` / `resp.tool_calls` to `/tmp/trace.txt` (flush every
+  write), then run the agent. Turns "`GenerationError` after 8 iterations" into the actual Python the
+  model wrote — which is how the infinite-loop and units bugs were found. `demo.py` prints nothing
+  during the loop, so without this every failed live run is opaque.
 - **Ollama tool-call check** (`tc.py`) — superseded by the `curl` one-liner in the Project 01
   section above. Use that.
 - **Live run output** — `/tmp/live2.txt` inside WSL, from the `max_retries=6` run still in flight

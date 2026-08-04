@@ -34,6 +34,14 @@ def build_llm():
     ``parallel_tool_calls``, which ``ollama_chat`` rejects outright — see
     ``docs/HANDOFF.md`` "bug 2". It is global mutable state on ``litellm``, so
     it belongs to the caller (here) and not to ``analyst.py``.
+
+    ``num_ctx`` is not a tuning knob, it is a correctness fix. Ollama defaults
+    this model to a 4096-token window; the *opening* CodeAct prompt is already
+    ~2300 tokens, and every retry appends the rejected plan plus its pandas
+    stdout. Past 4096 Ollama silently drops from the front of the context —
+    taking the cap instructions and tool definitions with it — so the retry
+    loop makes the model *less* able to satisfy the postcondition each round.
+    Measured, not guessed: see ``docs/HANDOFF.md``.
     """
     api_base = os.environ.get("OLLAMA_API_BASE")
     if api_base:
@@ -43,7 +51,7 @@ def build_llm():
 
         litellm.drop_params = True
         model = os.environ.get("OLLAMA_MODEL", "ollama_chat/qwen2.5:1.5b")
-        return CompletionClient(model=model, api_base=api_base)
+        return CompletionClient(model=model, api_base=api_base, num_ctx=16384)
 
     from nooa.util.quickstart import llm
 

@@ -124,9 +124,15 @@ class PortfolioAnalyst(Agent):
         2. Build ``orders = [Order(symbol=..., shares=...), ...]``. Negative
            shares sell. Only symbols already in ``self.portfolio.index``.
         3. Check yourself: ``self.projected_weights(orders)`` must put every
-           symbol at or below ``self.max_position_pct()``. Selling one name
-           shrinks the total, which pushes the *others* up — so re-check after
-           each adjustment rather than sizing against today's total.
+           symbol at or below ``self.max_position_pct()``. Selling shrinks the
+           total, which pushes the remaining weights *up*, so sizing once
+           against today's total is not enough. Refine over a **fixed** number
+           of passes — ``for _ in range(5):`` is plenty. Every pass must call
+           ``self.projected_weights(orders)`` again for fresh weights, then
+           append one more sell for each symbol still above the cap. Never
+           loop on ``self.weights()`` or on a snapshot taken before the loop:
+           that value does not change as you append orders, so a ``while``
+           over it never terminates.
         4. Call ``return_result(RebalancePlan(orders=orders, rationale=...))``
            from inside that same cell.
 
