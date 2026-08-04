@@ -71,15 +71,32 @@ globals into the `<execution_context>` block, so every import and top-level
 name in that file reaches the model. That is why the domain objects live in
 `market.py` and the condition functions are underscore-prefixed.
 
-**A 1.5B model is not enough.** In 4 consecutive runs on 2026-08-04,
-`qwen2.5:1.5b` never called `execute_python` once. It wrote correct-looking
-pandas against `self.portfolio` and `self.weights()` every time, then handed
-the whole cell to `return_result` as a *string* — rejected three times as
-`Expected: RebalancePlan, Got: str`, then `GenerationError`. It also made up
-`max_position_pct = 0.5` rather than calling `self.max_position_pct()`, which
-is a tidy argument for enforcing the cap outside the model. `tests/test_live.py`
-therefore **fails** rather than skips on generation failure; it skips only when
-there is no endpoint at all.
+**Pick the local model carefully.** Measured on 2026-08-04 against Ollama:
+
+| Model | Native tool calls | Outcome |
+|---|---|---|
+| `qwen2.5:1.5b` | yes | too weak — 4/4 runs never called `execute_python`, handed the cell to `return_result` as a *string* |
+| `qwen2.5-coder:7b` | **no** | unusable — cannot drive CodeAct at all |
+| `qwen2.5:7b` | yes | reaches the live objects and the postcondition; struggles to satisfy the cap |
+
+`qwen2.5-coder:7b` is the trap. `/api/show` reports
+`capabilities: completion,tools,insert`, but posting a tools array straight to
+Ollama's `/api/chat` returns `tool_calls: null` with the call as JSON in
+`content` — and it invented the tool name `run_python` instead of the
+`execute_python` it was given. Its chat template does not emit Ollama's
+tool-call format. Nothing in NOOA or LiteLLM can recover from that; before
+blaming the framework, post a one-tool request to `/api/chat` and check
+whether `message.tool_calls` is populated.
+
+The 1.5B also invented `max_position_pct = 0.5` rather than calling
+`self.max_position_pct()` — a tidy argument for enforcing the cap outside the
+model rather than trusting it inside.
+
+`tests/test_live.py` **fails** rather than skips on generation failure; it
+skips only when there is no endpoint at all. That is deliberate: the repo's
+own `packages/nooa-bench/tests/test_live_ollama.py` skips its CodeAct test on
+`GenerationError`, and on 2026-08-04 that test was skipping every run while
+the suite reported "3 passed" — a green suite that had verified nothing.
 
 ## Safety
 

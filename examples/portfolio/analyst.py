@@ -105,6 +105,11 @@ class PortfolioAnalyst(Agent):
         CodeActStrategy(
             config=CodeActConfig(
                 max_iterations=8,
+                # The default 3 is tuned for "the model got the shape wrong".
+                # This is a constraint-satisfaction loop: each rejection tells
+                # the model something it did not know, so it deserves more
+                # rounds than a plain validation retry.
+                max_retries=6,
                 preconditions=[_broker_ready],
                 postconditions=[_within_position_cap],
             )
@@ -113,7 +118,18 @@ class PortfolioAnalyst(Agent):
     async def propose_rebalance(self, thesis: str) -> RebalancePlan:
         """Propose a rebalance consistent with {thesis}.
 
-        Analyse ``self.portfolio`` and ``self.prices.history`` directly with
-        pandas. Every position must end at or below ``self.max_position_pct()``.
+        Do all of this inside one ``execute_python`` cell:
+
+        1. Analyse ``self.portfolio`` and ``self.prices.history`` with pandas.
+        2. Build ``orders = [Order(symbol=..., shares=...), ...]``. Negative
+           shares sell. Only symbols already in ``self.portfolio.index``.
+        3. Check yourself: ``self.projected_weights(orders)`` must put every
+           symbol at or below ``self.max_position_pct()``. Selling one name
+           shrinks the total, which pushes the *others* up — so re-check after
+           each adjustment rather than sizing against today's total.
+        4. Call ``return_result(RebalancePlan(orders=orders, rationale=...))``
+           from inside that same cell.
+
+        Do not describe the plan in prose. Only step 4 ends the task.
         """
         ...
