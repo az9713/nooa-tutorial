@@ -119,6 +119,35 @@ against the real in-memory frame, built a `RebalancePlan` in code, and called `r
 That is feature J *observed* rather than asserted. It then failed to converge in 3 retries, which
 is why `max_retries` is now 6. **No live run has yet ended in a passing plan.**
 
+**Latest traced run (2026-08-04, reworded docstring + `num_ctx=16384`): still no plan.** Ran out the
+40-minute wall at turn 7. Two things it settled:
+
+- **The window fix works and the measurement holds.** Turn 1 was ~2323 tokens, turn 7 ~4837 — growing
+  ~400/turn. At the old 4096 default this run would have started truncating around turn 5, mid-way
+  through the retry loop. It never came close to 16384, so context is no longer the constraint.
+- **The docstring reword did its structural job.** The model now writes
+  `for _ in range(5): projected_weights = self.projected_weights(initial_orders); ... if not
+  above_cap_symbols: break` — bounded, recomputed inside the loop. The infinite `while` over a stale
+  snapshot is gone.
+
+What blocks it now is plain code quality, and it is a *stuck* loop rather than a diverging one: from
+turn 4 on the model re-emits a near-identical cell that cannot run. Faults seen in the trace, in
+order of how easy they are to fix:
+
+- `max_position_pct` used as a bare name inside the refine loop — never bound in that scope, so
+  `NameError` every pass. (It calls `self.max_position_pct()` correctly *above* the loop.)
+- Invented imports: `from pandas import pformat, isin, notna, ...` — several do not exist.
+- One cell carried a stray `}}` mid-function — a hard `SyntaxError`.
+- The arithmetic is still nonsense independent of the above:
+  `reduction_needed = (1 - cap) * self.prices.history['close'].sum() / projected_weights[symbol]`,
+  and `history` has no `'close'` column (it is one column per symbol).
+
+**Next lever is a different model, not another docstring pass and not more retries.** Three docstring
+revisions have now moved the *shape* of the failure without fixing it, and the remaining errors are
+basic Python/pandas mistakes rather than misunderstandings of the task. Try `llama3.1:8b` or
+`qwen3:8b` (neither is on disk — `ollama pull` first, and re-check the tool-call diagnostic above
+before trusting either), or a funded API key.
+
 **Model selection is the trap, not model size.** Measured against Ollama:
 
 | Model | Native tool calls | Outcome |
