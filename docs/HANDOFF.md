@@ -10,7 +10,7 @@ of it — see "Git topology", which is the one thing to get right before touchin
 ## Current state (as of 2026-08-04)
 
 **Everything is committed and pushed. Working tree clean.** Local `main` = `tutorial/main` =
-`1617f05`.
+`70a8a5b`.
 
 - **Git topology (read before any push).** Two remotes:
   - `origin` → `https://github.com/NVIDIA-NeMo/labs-OO-Agents.git`, **push URL set to `no_push`**.
@@ -43,43 +43,103 @@ of it — see "Git topology", which is the one thing to get right before touchin
     (`1617f05`). Layered: plain-language boxes + exhaustive code walkthrough of every new file.
   - 21 markdown files (concepts/guides/architecture) — source-grounded, **never validated by
     execution**.
+- **Project 01 — portfolio analyst over live objects — code is done** (`examples/portfolio/`,
+  8 files, `2874660` + `70a8a5b`). Deliberately *not* a package: no `pyproject.toml`, no uv
+  workspace member, no `uv.lock` churn. One line added to root `pyproject.toml` `testpaths`
+  so it runs with the repo suite instead of rotting.
+  - `market.py` (93) — seeded synthetic `Broker` / `PriceFeed` / `Order` / `RebalancePlan` /
+    `synthetic_portfolio`. No NOOA imports. Separate module *on purpose* — see gotchas.
+  - `analyst.py` (119) — `PortfolioAnalyst`. Deterministic bodies (`max_position_pct`,
+    `holdings`, `total_value`, `weights`, `projected_weights`) alongside the ellipsis-bodied
+    `propose_rebalance`. `_broker_ready` precondition, `_within_position_cap` postcondition.
+  - `demo.py` (77) — runnable entry point; resolves Ollama or the quickstart cascade.
+  - `tests/` — 10 frozen tests (no key, no network) + `test_live.py` (integration marker).
+  - **Verified 2026-08-04:** 10 frozen pass; full repo suite 6430 passed / 5 skipped
+    (`pytest -q --ignore=tests/test_mcp`; the 4 MCP collection errors are the pre-existing
+    uninstalled-extra ones and now *interrupt* collection, so ignore that dir); ruff clean.
+  - **Mutation-checked, not just green.** Removing either condition fails 3 tests; perturbing
+    the correlation window one day fails the live-frame test. Do this again after any edit —
+    project 03's worst bug was invisible to five green tests.
+  - **The live path reaches the postcondition on a real model** but has never produced a
+    *passing* plan. See "Project 01 — where the live run got to" below.
 
 ## Next task
 
-**Project 01 — portfolio analyst over live objects.** Ranked #2 by value (3.95) but the only
-project scoring 5 on feature centrality, and the ideas doc's build order is `01 → 03`; 03 is done,
-so 01 is next under either ordering. Spec: `docs/nooa-project-ideas.html`, project 01 block.
+**Finish Project 01's live run, then write it up.** The code is done and frozen-tested; what is
+missing is a live run that ends in a cap-compliant plan, and the HTML explainer that needs those
+traces. Two sub-tasks, in order:
 
-The shape: an `Agent` subclass holding a real `DataFrame`, broker and price feed as typed fields;
-deterministic methods with real bodies (`max_position_pct()`) alongside generated methods with `...`
-bodies (`propose_rebalance()`); a `MethodPrecondition` rejecting orders over the position cap so the
-model is told *why* and retries instead of the run dying. The showcase is feature D — live objects
-passed by reference into the REPL, so the model writes pandas against the frame that already exists
-in memory rather than against a tool schema someone had to anticipate.
+1. **Get one clean live run.** A run with `max_retries=6` was still in flight at session end,
+   writing to WSL `/tmp/live2.txt` (survives `/clear`, not a reboot). Check it first:
+   ```bash
+   wsl -d Ubuntu -- bash -lc 'grep -hE "^Submitted|^Plan:|GenerationError|max_iterations" /tmp/live2.txt'
+   ```
+   If it failed, the blocker is *model reasoning, not plumbing*: `qwen2.5:7b` equalises the three
+   over-cap names against each other (all land on 25.1%) instead of across all eight holdings.
+   Options, cheapest first: strengthen the docstring hint about the shrinking denominator; raise
+   `max_retries` again; try `llama3.1:8b` or `qwen3:8b`; or an API key with credits (the
+   `OPENAI_API_KEY` in the env is **out of credits** — confirmed 2026-08-04).
+2. **Write `docs/nooa-project-01-explained.html`** in the style of `nooa-project-03-explained.html`
+   (layered: plain-language boxes + exhaustive walkthrough), then **add a README table row** or
+   nobody will find it. Run the HTML anchor checker afterwards (see scratch section).
 
-**Four things must be settled before or during the build — the user has not decided them yet:**
-
-1. **A model.** Frozen replay needs one live recording. Either Ollama (see gotchas for the WSL
-   gateway recipe; CodeAct needs `drop_params`) or an API key in the env. Without one, only the
-   deterministic half is testable and no trajectory is ever recorded — which guts the demo.
-2. **WSL.** This repo cannot run natively on Windows (see gotchas). Confirm the WSL path works
-   *before* starting, not three phases in.
-3. **Sandboxing.** This project runs model-generated code. NOOA's AST checks are explicitly not a
-   containment boundary; OS-level isolation is required. Synthetic read-only data sidesteps it.
-4. **Data.** Default to a seeded synthetic portfolio unless the user says otherwise.
-
-Recommended split: build the full artifact against synthetic data with a stubbed model
-autonomously, then one short live session to record goldens and finish the writeup with real
-traces. Project 03's own history is the argument — written from a source read, wrong in eight
-places, and the live run then found two more bugs no stubbed test could reach. Expect the same.
+Optional once live traces exist: record goldens for the analyst using project 03's
+`golden_trajectory` fixture. That would make 01 the first consumer of 03 — a genuinely good
+demonstration — but needs `nooa_bench` importable from `examples/portfolio/tests`, which it is
+not today.
 
 Parallel/backup tracks if 01 blocks:
+
 - **Wire project 03 into CI** (plan phase 6). A few lines; would gate pushes on the 53 frozen tests.
 - **Report bug 2 upstream** (see below) — the one finding useful to people other than us.
 - **Verify `docs/` against a real run.** The quickstart's 7 steps and every CLI command were
   transcribed from source and never executed. Acceptance: quickstart runs clean from a fresh
   `uv sync --group dev`, trace viewer on `:5001`. Sandbox first.
 - If the user asks for something else, that takes precedence.
+
+## Project 01 — where the live run got to (2026-08-04)
+
+**The mechanism works end to end against a real model. The model's arithmetic is the blocker.**
+
+Best run so far (`qwen2.5:7b`, `max_retries=3`): the model called `execute_python`, wrote pandas
+against the real in-memory frame, built a `RebalancePlan` in code, and called `return_result` from
+*inside* the cell. The postcondition then refused it with
+
+> `Plan rejected: AAPL would be 25.1%, MSFT would be 25.1%, NVDA would be 25.1%, but
+> max_position_pct() is 15%.`
+
+That is feature J *observed* rather than asserted. It then failed to converge in 3 retries, which
+is why `max_retries` is now 6. **No live run has yet ended in a passing plan.**
+
+**Model selection is the trap, not model size.** Measured against Ollama:
+
+| Model | Native tool calls | Outcome |
+|---|---|---|
+| `qwen2.5:1.5b` | yes | too weak — 4/4 runs never called `execute_python` |
+| `qwen2.5-coder:7b` | **no** | unusable — cannot drive CodeAct at all |
+| `qwen2.5:7b` | yes | reaches the live objects and the postcondition |
+
+`qwen2.5-coder:7b` is the one that costs a session if you don't know. `/api/show` reports
+`capabilities: completion,tools,insert`, but posting a tools array straight to `/api/chat` returns
+`tool_calls: null` with the call as JSON in `content` — and it invents the tool name `run_python`
+instead of the `execute_python` it was given. Its chat template does not emit Ollama's tool-call
+format. **Diagnostic before blaming NOOA or LiteLLM:**
+
+```bash
+curl -s http://127.0.0.1:11434/api/chat -d '{"model":"<m>","stream":false,
+  "messages":[{"role":"user","content":"Compute 2+2 in Python."}],
+  "tools":[{"type":"function","function":{"name":"execute_python","description":"Run a code cell",
+  "parameters":{"type":"object","properties":{"code":{"type":"string"}},"required":["code"]}}}]}'
+```
+If `message.tool_calls` is null and the call is sitting in `message.content`, the model is unusable
+for CodeAct — no framework can recover from it.
+
+Both 7B models are on disk (~4.7 GB each). `ollama rm qwen2.5-coder:7b` reclaims the dead one.
+Start the server with `OLLAMA_HOST=0.0.0.0`; from WSL the gateway is `172.26.16.1` (re-check with
+`ip route show default`, it changes).
+
+**`test_live.py` fails rather than skips on `GenerationError`, deliberately.** See the corrected
+bug below for why.
 
 ## Known-open issues in the harness
 
@@ -90,9 +150,13 @@ Parallel/backup tracks if 01 blocks:
   Ollama with CodeAct still hits this. Not our bug (NOOA ↔ LiteLLM ↔ Ollama), but it contradicts
   the ideas doc's "local models are first-class... with no API key" — true for generation, false
   for CodeAct. **Not reported upstream.**
-- **Skip-based flakiness handling has a ceiling.** `test_live_ollama.py` skips on `GenerationError`
-  because a 1.5B model fails the CodeAct task ~1 run in 3. If the model *always* fails, the test
-  skips forever while looking fine — the same rubber-stamp failure mode as stale goldens.
+- **Skip-based flakiness handling has a ceiling — and it fired. CONFIRMED 2026-08-04, not
+  hypothetical.** `packages/nooa-bench/tests/test_live_ollama.py` reports "3 passed, 1 skipped"
+  against *both* `qwen2.5:1.5b` and `qwen2.5:7b`, and the skipped one is the CodeAct test, skipping
+  on `GenerationError` **every single run**. A green suite that had verified nothing — the exact
+  rubber-stamp this entry predicted. Always run it with `-rs` and read the skip reason; "3 passed"
+  is not evidence that CodeAct works on Ollama. This is why `examples/portfolio/tests/test_live.py`
+  fails rather than skips.
 - **Latent, not a bug:** the record/replay round-trip is lossy in *type* — `content` goes in as a
   Pydantic model, comes back as a JSON string. Harmless today because `PredictStrategy` re-parses.
   If any strategy ever branched on `type(response.content)`, replay would silently diverge. Pinned
@@ -107,6 +171,27 @@ Parallel/backup tracks if 01 blocks:
   `wsl -d Ubuntu -- bash -lc 'cd /mnt/c/.../labs-OO-Agents && UV_PROJECT_ENVIRONMENT=$HOME/nooa-venv uv run --frozen pytest ...'`.
   Venv **must** live outside `/mnt/c` (9p I/O, and it collides with the half-built Windows `.venv`).
   Use `--frozen`: a plain `uv run` on Linux adds an sdist entry to `uv.lock`, dirtying a tracked file.
+- **`git status` inside WSL lists the ENTIRE tree as modified.** Hundreds of ` M` lines over the
+  `/mnt/c` 9p mount (filemode/CRLF differences between the two git configs). It looks like
+  catastrophic corruption and invites a `git checkout .` that would destroy real work. Windows git
+  showed exactly 2 real entries at the same moment. **Run pytest/ruff in WSL, run every `git`
+  command from Windows.**
+- **How live objects actually reach the REPL** (verified by execution, not by reading):
+  `exec_globals["self"] = self.agent` at `src/nooa/runtime/actor.py:1387` — the *real* agent
+  object, no copy, no serialization. Deterministic methods are **not** injected as bare names and
+  are **not** tools; they are reachable only as `self.method(...)`. The LLM gets exactly two tools,
+  `execute_python` and `return_result` (`codeact.py:789-791`). Caveat: under
+  `execution_backend="sandbox"` (not the default) `self` becomes a `ParentAgentProxy` and every
+  attribute hop is IPC.
+- **Agent fields reach the prompt through two different blocks** (`src/nooa/agent.py:241-247`):
+  `<self>` = `doc(type(self))`, **types only**, static — so a field needs a *class-level
+  annotation* to appear at all; assigning it only in `__init__` renders nothing. `<state>` =
+  `pformat(self, ...)`, **live values**, re-rendered every turn — a DataFrame arrives as its real
+  `repr`, truncated to `DataFrame(repr_len=N, [:250]=..., [-250:]=...)` past `max_string`.
+- **`Annotated[str, hidden]` is prompt redaction, not access control.** It drops the field from
+  both blocks (`agent.py:558`, `:589`) — verified: a planted secret appears in zero messages — but
+  `self.api_key` still resolves fine inside generated code. Note the asymmetry: module-level
+  `hidden` *does* remove names from `exec_globals`; field-level `hidden` does not.
 - **NOOA renders the defining module's namespace into the system prompt.** Adding one fixture to
   `conftest.py` broke all three goldens. That is why fixture agents live in `golden_agents.py` with a
   deliberately small namespace. Object reprs also arrive as `<function f at 0x7f3c...>`, so the
@@ -129,6 +214,14 @@ Parallel/backup tracks if 01 blocks:
 ## How to run the harness
 
 ```bash
+# Project 01 — frozen (no key, no network)
+uv run --frozen pytest examples/portfolio/tests             # 10 passed, 1 deselected
+# Project 01 — live
+OLLAMA_API_BASE=http://172.26.16.1:11434 OLLAMA_MODEL=ollama_chat/qwen2.5:7b \
+  uv run --frozen python examples/portfolio/demo.py
+# whole repo (MCP dir must be ignored — it now *interrupts* collection)
+uv run --frozen pytest -q --ignore=tests/test_mcp           # 6430 passed, 5 skipped
+
 # frozen (default; no key, no network)
 uv run --frozen pytest packages/nooa-bench/tests            # 53 passed, 4 deselected
 # re-record goldens after an intended behaviour change
@@ -149,6 +242,18 @@ record is the harness itself plus the HTML docs.
   the memory-address leak (different module namespace ⇒ different prompt). See the plan's phase 1.
 - **Live exploration** (`live_ollama.py`, `live_diag.py`, `codeact_ollama.py`) — superseded by the
   committed `tests/test_live_ollama.py`. Nothing in them is worth keeping.
+- **Prompt-inspection probe** (`probe2.py`) — the tool that answered "how do live objects reach the
+  REPL". Subclass `FakeLLMClient`, override `acall` to append `[dict(m) for m in messages]` to a
+  module-level list, script one `execute_python` turn plus one `return_result`, run the agent, then
+  dump every recorded message to a file. That transcript *is* the rendered system prompt —
+  `<execution_context>`, `<self>`, `<state>`, and the `PythonOutput` fed back after each cell.
+  Worth 20 lines any time you need to know what the model actually sees; far faster than reading
+  `codeact.py`. The same idea is committed and reusable as
+  `examples/portfolio/tests/conftest.py::RecordingLLM` (`.text()` flattens every message).
+- **Ollama tool-call check** (`tc.py`) — superseded by the `curl` one-liner in the Project 01
+  section above. Use that.
+- **Live run output** — `/tmp/live2.txt` inside WSL, from the `max_retries=6` run still in flight
+  at session end. WSL `/tmp` survives `/clear` but not a reboot. Read it before re-running.
 - **HTML anchor checker** — one-liner, run after any edit touching headings or nav in a `docs/*.html`:
   ```bash
   python -c "
