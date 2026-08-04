@@ -8,6 +8,7 @@
 | Page | View |
 | --- | --- |
 | Projects to build on NOOA | **[Open ↗](https://az9713.github.io/nooa-tutorial/nooa-project-ideas.html)** |
+| Agents you can diff — Project 03 explained line by line | **[Open ↗](https://az9713.github.io/nooa-tutorial/nooa-project-03-explained.html)** |
 | Implementation plan — Project 03: golden-trajectory regression CI | **[Open ↗](https://az9713.github.io/nooa-tutorial/nooa-project-03-plan.html)** |
 
 <sub>Served by GitHub Pages from [`docs/`](docs/).</sub>
