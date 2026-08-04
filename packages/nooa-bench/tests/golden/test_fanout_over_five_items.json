@@ -1,0 +1,195 @@
+{
+  "agent": {
+    "name": "FanOutAgent",
+    "version": "0.0.0"
+  },
+  "schema_version": "ATIF-v1.7",
+  "steps": [],
+  "subagent_trajectories": [
+    {
+      "agent": {
+        "name": "classify",
+        "version": "0.0.0"
+      },
+      "final_metrics": {
+        "total_cached_tokens": 0,
+        "total_completion_tokens": 10,
+        "total_prompt_tokens": 50,
+        "total_steps": 3
+      },
+      "schema_version": "ATIF-v1.7",
+      "steps": [
+        {
+          "message": "<strategy_prompt>\nYou are generating structured data matching the specified return type.\nOutput will be validated against the type schema.\n\nEnsure your response:\n1. Includes all required fields\n2. Uses correct types for each field\n3. Follows the exact schema structure\n4. Contains no extra fields beyond the schema\n\nThe LLM will automatically format your output as JSON.\n</strategy_prompt>",
+          "source": "system",
+          "step_id": 1
+        },
+        {
+          "message": "# Your task\nClassify item-0 into a category.\n\n## Input parameters:\nitem = 'item-0'\n\nPerform the task and return the result directly.",
+          "source": "user",
+          "step_id": 2
+        },
+        {
+          "llm_call_count": 1,
+          "message": "\"cat0\"",
+          "metrics": {
+            "cached_tokens": 0,
+            "completion_tokens": 10,
+            "prompt_tokens": 50
+          },
+          "model_name": "fake-model",
+          "source": "agent",
+          "step_id": 3
+        }
+      ]
+    },
+    {
+      "agent": {
+        "name": "classify",
+        "version": "0.0.0"
+      },
+      "final_metrics": {
+        "total_cached_tokens": 0,
+        "total_completion_tokens": 10,
+        "total_prompt_tokens": 50,
+        "total_steps": 3
+      },
+      "schema_version": "ATIF-v1.7",
+      "steps": [
+        {
+          "message": "<strategy_prompt>\nYou are generating structured data matching the specified return type.\nOutput will be validated against the type schema.\n\nEnsure your response:\n1. Includes all required fields\n2. Uses correct types for each field\n3. Follows the exact schema structure\n4. Contains no extra fields beyond the schema\n\nThe LLM will automatically format your output as JSON.\n</strategy_prompt>",
+          "source": "system",
+          "step_id": 1
+        },
+        {
+          "message": "# Your task\nClassify item-1 into a category.\n\n## Input parameters:\nitem = 'item-1'\n\nPerform the task and return the result directly.",
+          "source": "user",
+          "step_id": 2
+        },
+        {
+          "llm_call_count": 1,
+          "message": "\"cat1\"",
+          "metrics": {
+            "cached_tokens": 0,
+            "completion_tokens": 10,
+            "prompt_tokens": 50
+          },
+          "model_name": "fake-model",
+          "source": "agent",
+          "step_id": 3
+        }
+      ]
+    },
+    {
+      "agent": {
+        "name": "classify",
+        "version": "0.0.0"
+      },
+      "final_metrics": {
+        "total_cached_tokens": 0,
+        "total_completion_tokens": 10,
+        "total_prompt_tokens": 50,
+        "total_steps": 3
+      },
+      "schema_version": "ATIF-v1.7",
+      "steps": [
+        {
+          "message": "<strategy_prompt>\nYou are generating structured data matching the specified return type.\nOutput will be validated against the type schema.\n\nEnsure your response:\n1. Includes all required fields\n2. Uses correct types for each field\n3. Follows the exact schema structure\n4. Contains no extra fields beyond the schema\n\nThe LLM will automatically format your output as JSON.\n</strategy_prompt>",
+          "source": "system",
+          "step_id": 1
+        },
+        {
+          "message": "# Your task\nClassify item-2 into a category.\n\n## Input parameters:\nitem = 'item-2'\n\nPerform the task and return the result directly.",
+          "source": "user",
+          "step_id": 2
+        },
+        {
+          "llm_call_count": 1,
+          "message": "\"cat2\"",
+          "metrics": {
+            "cached_tokens": 0,
+            "completion_tokens": 10,
+            "prompt_tokens": 50
+          },
+          "model_name": "fake-model",
+          "source": "agent",
+          "step_id": 3
+        }
+      ]
+    },
+    {
+      "agent": {
+        "name": "classify",
+        "version": "0.0.0"
+      },
+      "final_metrics": {
+        "total_cached_tokens": 0,
+        "total_completion_tokens": 10,
+        "total_prompt_tokens": 50,
+        "total_steps": 3
+      },
+      "schema_version": "ATIF-v1.7",
+      "steps": [
+        {
+          "message": "<strategy_prompt>\nYou are generating structured data matching the specified return type.\nOutput will be validated against the type schema.\n\nEnsure your response:\n1. Includes all required fields\n2. Uses correct types for each field\n3. Follows the exact schema structure\n4. Contains no extra fields beyond the schema\n\nThe LLM will automatically format your output as JSON.\n</strategy_prompt>",
+          "source": "system",
+          "step_id": 1
+        },
+        {
+          "message": "# Your task\nClassify item-3 into a category.\n\n## Input parameters:\nitem = 'item-3'\n\nPerform the task and return the result directly.",
+          "source": "user",
+          "step_id": 2
+        },
+        {
+          "llm_call_count": 1,
+          "message": "\"cat3\"",
+          "metrics": {
+            "cached_tokens": 0,
+            "completion_tokens": 10,
+            "prompt_tokens": 50
+          },
+          "model_name": "fake-model",
+          "source": "agent",
+          "step_id": 3
+        }
+      ]
+    },
+    {
+      "agent": {
+        "name": "classify",
+        "version": "0.0.0"
+      },
+      "final_metrics": {
+        "total_cached_tokens": 0,
+        "total_completion_tokens": 10,
+        "total_prompt_tokens": 50,
+        "total_steps": 3
+      },
+      "schema_version": "ATIF-v1.7",
+      "steps": [
+        {
+          "message": "<strategy_prompt>\nYou are generating structured data matching the specified return type.\nOutput will be validated against the type schema.\n\nEnsure your response:\n1. Includes all required fields\n2. Uses correct types for each field\n3. Follows the exact schema structure\n4. Contains no extra fields beyond the schema\n\nThe LLM will automatically format your output as JSON.\n</strategy_prompt>",
+          "source": "system",
+          "step_id": 1
+        },
+        {
+          "message": "# Your task\nClassify item-4 into a category.\n\n## Input parameters:\nitem = 'item-4'\n\nPerform the task and return the result directly.",
+          "source": "user",
+          "step_id": 2
+        },
+        {
+          "llm_call_count": 1,
+          "message": "\"cat4\"",
+          "metrics": {
+            "cached_tokens": 0,
+            "completion_tokens": 10,
+            "prompt_tokens": 50
+          },
+          "model_name": "fake-model",
+          "source": "agent",
+          "step_id": 3
+        }
+      ]
+    }
+  ]
+}

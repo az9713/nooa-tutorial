@@ -1,3 +1,8 @@
+> **📚 This is a tutorial clone.** This repository is a personal, tutorial-oriented fork of the original
+> **[NVIDIA-NeMo/labs-OO-Agents](https://github.com/NVIDIA-NeMo/labs-OO-Agents)** repo, with added study notes
+> and docs under [`docs/`](docs/). It is not affiliated with or endorsed by NVIDIA. For the canonical,
+> maintained source, go to the [upstream repository](https://github.com/NVIDIA-NeMo/labs-OO-Agents).
+
 <div align="center">
 
 <br />

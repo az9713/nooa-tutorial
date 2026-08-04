@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Implementation plan — Project 03: golden-trajectory regression CI</title>
+<style>
+  :root {
+    --bg: #fbfaf8;
+    --panel: #ffffff;
+    --ink: #1c1b19;
+    --ink-soft: #57534e;
+    --ink-faint: #8a837c;
+    --rule: #e5e1db;
+    --accent: #76b900;
+    --accent-ink: #4a7500;
+    --warn-bg: #fdf6e7;
+    --warn-rule: #e0c469;
+    --warn-ink: #6b5310;
+    --code-bg: #f4f2ee;
+    --ok: #76b900;
+    --no: #b34a2f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16150f;
+      --panel: #1d1c16;
+      --ink: #ece9e2;
+      --ink-soft: #b3ada2;
+      --ink-faint: #837d73;
+      --rule: #33312a;
+      --accent: #8fd41a;
+      --accent-ink: #a7dd4d;
+      --warn-bg: #2a2313;
+      --warn-rule: #6b5a24;
+      --warn-ink: #e0c469;
+      --code-bg: #24231c;
+      --ok: #8fd41a;
+      --no: #e0785c;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.65 ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
+  }
+  .wrap { max-width: 46rem; margin: 0 auto; padding: 3.5rem 1.5rem 6rem; }
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+  .eyebrow {
+    font: 600 0.72rem/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent-ink); margin-bottom: 0.9rem;
+  }
+  h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); line-height: 1.13; margin: 0 0 0.6rem; letter-spacing: -0.02em; }
+  .standfirst { font-size: 1.06rem; color: var(--ink-soft); margin: 0; max-width: 34rem; }
+  .meta { font: 0.78rem/1.5 ui-sans-serif, system-ui, sans-serif; color: var(--ink-faint); margin-top: 1.2rem; }
+  h2 {
+    font-size: 1.35rem; letter-spacing: -0.01em; margin: 3.2rem 0 1rem;
+    padding-bottom: 0.4rem; border-bottom: 1px solid var(--rule);
+  }
+  h3 { font-size: 1.02rem; margin: 1.7rem 0 0.4rem; }
+  p { margin: 0 0 1rem; }
+  a { color: var(--accent-ink); }
+  ul, ol { margin: 0 0 1rem; padding-left: 1.3rem; }
+  li { margin-bottom: 0.45rem; }
+  code, .mono {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 0.87em; background: var(--code-bg);
+    padding: 0.1em 0.35em; border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--rule); border-radius: 6px;
+    padding: 0.9rem 1rem; overflow-x: auto; margin: 1rem 0;
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 0.8rem; line-height: 1.55;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  .note {
+    background: var(--warn-bg); border-left: 3px solid var(--warn-rule);
+    padding: 0.9rem 1.1rem; margin: 1.4rem 0; border-radius: 0 4px 4px 0;
+    color: var(--warn-ink); font-size: 0.94rem;
+  }
+  .note p:last-child { margin-bottom: 0; }
+  .card {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 8px;
+    padding: 1.4rem 1.5rem; margin: 1.5rem 0;
+  }
+  .card > h3:first-child { margin-top: 0; }
+  .phase > h3 {
+    display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap;
+    font-size: 1.12rem; letter-spacing: -0.01em;
+  }
+  .num {
+    font: 700 0.76rem/1 ui-sans-serif, system-ui, sans-serif;
+    background: var(--accent); color: #12200a;
+    padding: 0.3em 0.55em; border-radius: 4px; flex: none;
+  }
+  .cost {
+    font: 600 0.67rem/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--ink-faint); border: 1px solid var(--rule);
+    padding: 0.3em 0.5em; border-radius: 3px; flex: none;
+  }
+  .label {
+    font: 600 0.7rem/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.11em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 1.3rem 0 0.35rem;
+  }
+  .check {
+    border-left: 2px solid var(--ok); padding: 0.15rem 0 0.15rem 0.9rem;
+    margin: 0.9rem 0 0; font-size: 0.94rem; color: var(--ink-soft);
+  }
+  .check strong { color: var(--ink); }
+  .check.miss { border-left-color: var(--no); }
+
+  /* ---- post-build corrections ---- */
+  .was {
+    border-left: 3px solid var(--no); background: var(--code-bg);
+    padding: 0.75rem 1rem; margin: 1rem 0; border-radius: 0 4px 4px 0;
+    font-size: 0.92rem;
+  }
+  .was p { margin: 0 0 0.5rem; }
+  .was p:last-child { margin-bottom: 0; }
+  .was .tag {
+    display: inline-block; font: 600 0.65rem/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--no);
+    border: 1px solid var(--no); padding: 0.28em 0.45em; border-radius: 3px;
+    margin-right: 0.5rem; vertical-align: 0.1em;
+  }
+  del { color: var(--ink-faint); text-decoration-thickness: 1px; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2rem 0; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font: 600 0.72rem/1.3 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+  .src { font: 0.75rem/1.5 ui-sans-serif, system-ui, sans-serif; color: var(--ink-faint); }
+  .nav {
+    font: 0.82rem/1.9 ui-sans-serif, system-ui, sans-serif;
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 8px;
+    padding: 1rem 1.2rem; margin: 2rem 0;
+  }
+  .nav b { display: block; font-size: 0.7rem; letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.3rem; }
+  .nav a { margin-right: 1rem; white-space: nowrap; }
+  footer { margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); font: 0.8rem/1.6 ui-sans-serif, system-ui, sans-serif; color: var(--ink-faint); }
+  @media print {
+    body { background: #fff; color: #000; }
+    .nav { display: none; }
+    .card, pre { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Implementation plan · project 03 · rank #1 · revised twice after building it</div>
+  <h1>Golden-trajectory regression CI for NOOA agents</h1>
+  <p class="standfirst">A pytest plugin that captures agent runs as ATIF trajectories, stores them as reviewable
+  golden files, and fails the build when behaviour changes — not just when the answer changes.</p>
+  <p class="meta">Companion to <code>nooa-project-ideas.html</code>. Scoped against a source read of
+  <code>labs-OO-Agents</code> at HEAD <code>0cccda1</code>.
+  <strong>Revision 3 — phases 0–5 built and run, including a live Ollama recording.</strong> The original text was written
+  from source alone and was wrong in eight places; the live run then found two more bugs that no
+  amount of stubbed testing could reach. Rather than quietly fix them, every correction is
+  marked <span class="tag">was</span> in place, and the original claim is preserved next to what
+  actually happened. What has <em>not</em> been verified is listed in its own section, because the
+  gap between "the tests pass" and "this works" is where the remaining risk lives.</p>
+</header>
+
+<div class="nav">
+  <b>Jump to</b>
+  <a href="#summary">Summary</a>
+  <a href="#revisions">What building it changed</a>
+  <a href="#exists">What already exists</a>
+  <a href="#correction">One correction</a>
+  <a href="#frozen">The central decision</a>
+  <a href="#artifact">The golden file</a>
+  <a href="#diff">The diff</a>
+  <a href="#phases">Phases 0–6</a>
+  <a href="#unverified">Still unverified</a>
+  <a href="#notbuilding">Not building</a>
+  <a href="#risks">Risks</a>
+  <a href="#effort">Effort</a>
+  <a href="#state">Current state</a>
+</div>
+
+<h2 id="summary">Summary</h2>
+
+<p>The expensive parts of this project are already in the repository. ATIF export works, it is
+event-driven, and <code>atif_scope()</code> hands you a typed <code>Trajectory</code> object in memory
+with no file to parse. A hermetic <code>FakeLLMClient</code> exists for replaying scripted model
+responses. Agents are ordinary classes, so a test is just <code>pytest</code>. What is missing is
+small and specific: <strong>normalise a trajectory, reduce it to a comparable shape, diff two of
+them, and wrap that in a fixture.</strong> That is the whole project.</p>
+
+<p>The plan is therefore not "build a regression harness". It is "add four pure functions and a
+pytest plugin to <code>nooa-bench</code>, in about 500 lines, with no new dependencies." Everything
+below is either one of those pieces or a check that the piece works.</p>
+
+<div class="was">
+  <p><span class="tag">was</span> <strong>"About 500 lines" counted only the half I was thinking
+  about.</strong> The two source modules came to 576 lines, close to the estimate. But the tests,
+  fixture agents and committed goldens add another 918, for 1,494 total. The estimate was not wrong
+  about the module; it silently excluded the tests, which is the part of a testing tool you cannot
+  skip. Read "about 500 lines" as "about 500 lines of library, and roughly as much again around it".</p>
+</div>
+
+<div class="card">
+  <h3>The shape of it</h3>
+  <table>
+    <tr><th>Question</th><th>Answer</th></tr>
+    <tr><td>Where does the code live?</td><td><code>packages/nooa-bench/src/nooa_bench/</code> — an existing workspace member, already a dev dependency, plausibly upstreamable</td></tr>
+    <tr><td>New dependencies?</td><td>None. <code>json</code>, <code>difflib</code>, <code>dataclasses</code>, plus <code>pydantic</code> and <code>pytest</code> which are already there</td></tr>
+    <tr><td>What is a golden file?</td><td>A normalised ATIF trajectory, pretty-printed JSON, committed next to the test and reviewed in the PR diff</td></tr>
+    <tr><td>What runs in CI?</td><td>Frozen-LLM tests only — no API key, no network, deterministic. Live-model tests run nightly or on demand</td></tr>
+    <tr><td>How do you update a golden?</td><td><code>pytest --golden-update</code>, the snapshot-testing convention</td></tr>
+    <tr><td>Smallest useful version</td><td>Phases 0–3. Roughly three focused days. Everything after that is leverage, not viability</td></tr>
+  </table>
+</div>
+
+<h2 id="revisions">What building it changed</h2>
+
+<p>Phases 0–5 were built and run. The design survived, and the central bet — that ATIF's typed
+trajectories make this tractable — held. But eight specific claims below were wrong, and the pattern
+in how they were wrong is more useful than the list itself.</p>
+
+<p><strong>Every error came from the same source: reasoning about runtime behaviour by reading
+source code.</strong> The schema tells you which fields exist; it cannot tell you which ones are
+stable. The exporter's signature tells you it takes a path; it cannot tell you it always writes one.
+Nothing in the source says that adding a fixture to a test file will change the agent's system
+prompt. Each of these was invisible until something ran.</p>
+
+<div class="card">
+  <h3>The three that mattered</h3>
+  <p><strong>1 · The prompt contains memory addresses.</strong> NOOA renders the execution context —
+  every name in scope — into the system prompt, so any object without a custom <code>__repr__</code>
+  arrives as <code>&lt;function f at 0x78289b0c5d00&gt;</code>. That address changes every run. It is
+  now masked to <code>0xADDR</code>. Unpredictable from source, and it invalidates every golden if
+  missed.</p>
+  <p><strong>2 · Where you define a fixture agent changes its prompt.</strong> Same mechanism, worse
+  consequence. Adding one unrelated fixture to <code>conftest.py</code> broke all three goldens,
+  because the agent classes lived there and conftest's namespace is what gets rendered. Fixture
+  agents now live in a separate <code>golden_agents.py</code> whose namespace is deliberately small
+  and stable. Without this the harness is unusable: every test-scaffolding edit forces a re-record,
+  and re-recording on every change is how a golden suite becomes a rubber stamp.</p>
+  <p><strong>3 · Asserting on shape alone left a hole.</strong> The plan argued — at length, and
+  persuasively — that comparing message content is a fool's errand. That reasoning is right for a
+  live model and wrong for frozen replay, where content is deterministic. A run with identical
+  structure but a different computed value passed while the committed golden went stale. Fixed with
+  a <code>content_hash</code> over the whole normalised trajectory, exact in frozen mode and
+  disabled live. It is also what caught error 1.</p>
+</div>
+
+<table>
+  <tr><th>#</th><th>The plan said</th><th>What happened</th></tr>
+  <tr><td>1</td><td>Volatile fields: timestamps, ids, cost, paths, durations</td><td>Also <code>extra.generation_id</code> and object addresses. Paths and durations never appeared at all</td></tr>
+  <tr><td>2</td><td>Fixture agents can live anywhere</td><td>Their defining module's namespace is rendered into the prompt</td></tr>
+  <tr><td>3</td><td>Assert on shape; never compare content</td><td>True live, wrong frozen — needs a content hash</td></tr>
+  <tr><td>4</td><td>"A test never needs to touch the filesystem"</td><td><code>atif_scope</code> <em>always</em> writes a file. The first version left ~280 JSON files in the working tree</td></tr>
+  <tr><td>5</td><td>Call <code>assert_atif_normative()</code> on every capture</td><td>Dropped — it would couple the package to <code>tests/atif</code>, and the schema already validates</td></tr>
+  <tr><td>6</td><td>Register via a <code>pytest11</code> entry point</td><td>A <code>conftest.py</code> instead — no tracked file edited. <code>--import-mode=importlib</code> also broke sibling imports</td></tr>
+  <tr><td>7</td><td>Phase 5: add <code>testpaths</code>, wire CI (2 hours)</td><td>Both already done upstream. Phase 5 cost nothing</td></tr>
+  <tr><td>8</td><td>Phase 0: <code>uv sync</code> and go</td><td>The repo imports <code>fcntl</code> and cannot run on Windows at all</td></tr>
+</table>
+
+<div class="note">
+  <p><strong>The phase-1 spike was supposed to catch #1, and its acceptance check passed anyway.</strong>
+  The spike ran the agents from a standalone script, diffed two runs, and produced a clean list of
+  four volatile fields — exactly the deliverable the plan asked for. It missed the addresses because
+  a script has a different namespace than a pytest module, so the prompt it produced was not the
+  prompt the real tests would produce.</p>
+  <p>The lesson generalises past this project: <strong>a spike that does not reproduce the real
+  execution environment produces a confident, incomplete answer</strong> — which is worse than no
+  answer, because the acceptance check goes green. If the plan were rewritten from scratch, phase 1
+  would say "run the spike as a pytest test, in the directory layout you intend to ship".</p>
+</div>
+
+<h2 id="exists">What already exists — do not rebuild it</h2>
+
+<p>Scoping this project badly means writing a trajectory capture layer that already ships. Read these
+five things before writing a line.</p>
+
+<div class="card">
+  <h3><code>atif_scope()</code> — capture, already solved</h3>
+  <p>An async context manager that installs the exporter on an agent's event manager, writes the
+  trajectory on exit, and — the important part — <em>yields the exporter</em>, whose
+  <code>get_trajectory()</code> returns the live <code>Trajectory</code> model.
+  <del>A test never needs to touch the filesystem to get its trajectory.</del> It also records
+  <code>extra.crashed = True</code> when the wrapped block raises, so a crashed run is still a
+  comparable artifact rather than a missing one.</p>
+  <div class="was">
+    <p><span class="tag">was</span> <strong>The scope always writes a file, whether you read it or
+    not.</strong> Reading <code>get_trajectory()</code> instead of the file does not stop the write —
+    it only stops you parsing it. Left at its default the file lands in <code>./logs/atif/</code>,
+    relative to wherever pytest was started. The first working version of <code>capture()</code>
+    quietly deposited about 280 JSON files into the repository before anyone noticed.</p>
+    <p><code>capture()</code> now points the scope at a <code>TemporaryDirectory</code>, and a test
+    asserts the working tree is untouched afterwards. Cheap to fix, easy to miss: a stray output
+    directory is not something a test suite fails on.</p>
+  </div>
+  <p class="src">src/nooa/atif/install.py:182 (<code>atif_scope</code>), :265 (<code>enable_atif</code>), src/nooa/atif/exporter.py:895 (<code>get_trajectory</code>), :850 (<code>finalize_on_exception</code>)</p>
+</div>
+
+<div class="card">
+  <h3>The ATIF v1.7 schema — the reason this project is possible</h3>
+  <p><code>Trajectory</code> is a Pydantic model with <code>extra="forbid"</code> throughout:
+  a root with <code>agent</code>, ordered <code>steps</code>, optional <code>final_metrics</code>, and
+  nested <code>subagent_trajectories</code>. Each <code>StepObject</code> carries
+  <code>step_id</code>, <code>source</code>, <code>message</code>, <code>tool_calls</code>,
+  <code>observation</code>, <code>metrics</code>, and <code>llm_call_count</code>. This is a typed tree,
+  not a log. <code>model_dump()</code> gives you a plain dict to diff; <code>model_validate_json()</code>
+  gives you back a validated object from a golden file. Both directions are free.</p>
+  <p class="src">src/nooa/atif/schema.py — <code>SCHEMA_VERSION = "ATIF-v1.7"</code> at :27</p>
+</div>
+
+<div class="card">
+  <h3>The normative rules — a validator you get for nothing</h3>
+  <p><code>tests/atif/normative.py</code> defines nine MUST rules the structural schema does not
+  cover: sequential <code>step_id</code>s from 1 (N1), tool-call/observation joinability within a
+  step (N2), <code>trajectory_id</code> uniqueness (N3), <code>is_copied_context</code> propagation
+  across a compaction boundary (N4), <code>llm_call_count = 0</code> implying absent metrics (N5),
+  ISO 8601 timestamps (N6), message presence (N7), <code>final_metrics</code> summation (N8), and
+  sub-trajectory reference resolvability (N9). <del>Call <code>assert_atif_normative()</code> on every
+  captured trajectory before comparing it — a malformed capture should fail as a capture bug, not as
+  a spurious behavioural diff.</del></p>
+  <div class="was">
+    <p><span class="tag">was</span> <strong>Not called. The validator lives in the framework's test
+    tree, not its package.</strong> <code>tests/atif/normative.py</code> ships with the repo's tests
+    and is not installed, so importing it would couple <code>nooa-bench</code> to
+    <code>tests/atif</code> — fatal for the upstreaming pitch, since the package would no longer be
+    installable on its own.</p>
+    <p>Dropping it costs less than it looks. <code>get_trajectory()</code> constructs a Pydantic
+    <code>Trajectory</code>, so structural validation has already run by the time you hold one. The
+    normative rules are the exporter's contract, covered by 126 of its own tests. And a violation
+    that did slip through would appear in the golden diff rather than vanish. The reasoning in the
+    original text was sound; the packaging consequence was not considered.</p>
+  </div>
+  <p class="src">tests/atif/normative.py; used by tests/atif/test_end_to_end_codeact.py</p>
+</div>
+
+<div class="card">
+  <h3><code>FakeLLMClient</code> — hermetic runs, already solved</h3>
+  <p>Takes <code>scripted_responses: list[LLMResponse]</code> and pops them in order under an
+  <code>asyncio.Lock</code>, so concurrent calls still consume the script deterministically. It
+  records <code>call_count</code> and <code>last_messages</code>. Exhausting the queue yields an empty
+  response rather than raising — worth knowing, because a behavioural change that <em>adds</em> an LLM
+  call will silently get an empty response instead of an obvious error. Phase&nbsp;4 wraps it to fail
+  loudly instead.</p>
+  <p class="src">src/nooa/unifiedllm/fake.py:15; <code>tests/atif/test_end_to_end_codeact.py</code> is a working template of a stubbed CodeAct run</p>
+</div>
+
+<div class="card">
+  <h3>The test harness conventions</h3>
+  <p><code>asyncio_mode = "auto"</code> means async tests need no decorator. An
+  <code>integration</code> marker already exists for "makes real API calls" — live-model trajectory
+  tests belong under it rather than under a new marker. <del><code>packages/nooa-cli/tests</code> is
+  already in <code>testpaths</code>, so adding <code>packages/nooa-bench/tests</code> follows an
+  established pattern.</del></p>
+  <div class="was">
+    <p><span class="tag">was</span> <strong><code>packages/nooa-bench/tests</code> is already in
+    <code>testpaths</code> too</strong> — I read the list, saw the <code>nooa-cli</code> entry, and
+    stopped reading one line early. Combined with <code>.github/workflows/ci.yml:38</code> already
+    running <code>pytest -m "not integration and not stress"</code> from the root, the frozen tests
+    are gated by the existing CI job the moment the files exist. Phase 5 turned out to be nothing.</p>
+    <p>Also unnoticed: <code>addopts</code> includes <code>--import-mode=importlib</code>, which does
+    not put a test directory on <code>sys.path</code>. Sharing a helper module between test files
+    needs an explicit <code>sys.path</code> insert in the conftest — two lines, but it took a failed
+    run to find.</p>
+  </div>
+  <p class="src">pyproject.toml:206–230 — <code>testpaths</code> at :208, <code>addopts</code> at :225</p>
+</div>
+
+<h2 id="correction">One correction before you scope</h2>
+
+<div class="note">
+  <p><strong><code>trace_analyzer.py</code> is not the foundation for this.</strong> The project
+  write-up implies it is. It is not. All 186 lines of it read <em>OTel JSONL span files</em> —
+  <code>start_time_unix_nano</code>, <code>attributes["llm.token_count.prompt"]</code>,
+  <code>gen_ai.usage.input_tokens</code> — and aggregate per-model token counts and latencies into a
+  <code>TaskUsageStats</code> dataclass. It never touches ATIF. It knows nothing about steps,
+  tool calls, or ordering.</p>
+  <p>That does not sink the project; it relocates it. <code>TraceAnalyzer</code> remains useful as the
+  <em>cost</em> half of a comparison (tokens, latency, model mix), while ATIF supplies the
+  <em>behaviour</em> half (what happened, in what order). Plan to use both, but do not plan to extend
+  <code>trace_analyzer.py</code> into a trajectory differ. The honest sentence is: this project shares
+  a package with <code>nooa-bench</code> and reuses its runner conventions, but the diffing code is new.</p>
+</div>
+
+<h2 id="frozen">The central design decision: frozen or live</h2>
+
+<p>This is the decision the whole design turns on, and getting it backwards produces a harness that
+either cannot run in CI or cannot detect anything.</p>
+
+<p>A regression test needs a fixed baseline. But an agent run has two sources of variation — your
+code, and the model. If you re-run against a real model, every diff is contaminated by sampling
+noise, and you cannot tell "my prompt edit changed behaviour" from "the model felt different today".
+If you replay recorded model responses, the run is perfectly deterministic — but the model can no
+longer react to your prompt edit, so a prompt change produces no diff at all.</p>
+
+<p>Both are useful. They detect different things, so build both and be explicit about which is which.</p>
+
+<table>
+  <tr><th></th><th>Frozen mode</th><th>Live mode</th></tr>
+  <tr><td><strong>LLM</strong></td><td><code>FakeLLMClient</code> replaying a recorded script</td><td>The real model</td></tr>
+  <tr><td><strong>Determinism</strong></td><td>Total — same bytes every run</td><td>None — sampling, model drift, provider changes</td></tr>
+  <tr><td><strong>Detects</strong></td><td>Regressions in <em>your</em> code: strategy plumbing, context assembly, method dispatch, parsing, tracing, step ordering, token accounting</td><td>Regressions in <em>behaviour</em>: prompt edits, model swaps, strategy swaps</td></tr>
+  <tr><td><strong>Blind to</strong></td><td>Anything requiring the model to react — a prompt edit changes the prompt but not the scripted reply</td><td>Nothing, but it cannot distinguish signal from noise on a single run</td></tr>
+  <tr><td><strong>Cost</strong></td><td>Zero. No key, no network, milliseconds</td><td>Real tokens, real seconds, needs a sandbox for CodeAct</td></tr>
+  <tr><td><strong>Where it runs</strong></td><td>Every PR — this is the CI gate</td><td>Nightly, or on demand, under the existing <code>integration</code> marker</td></tr>
+</table>
+
+<p><strong>Frozen mode is the product.</strong> It is the thing that can actually gate a merge, and it
+catches the class of bug that is currently invisible: a refactor of context assembly that quietly
+doubles the number of steps, or a strategy change that stops emitting an observation. Live mode is a
+research instrument — genuinely valuable for "did this prompt edit help", but it needs repetition and
+tolerance bands rather than equality, and it should never block a build.</p>
+
+<div class="note">
+  <p><strong>Build frozen mode first even though live mode is the headline use case.</strong> Live
+  mode without a normaliser and a differ is just running the agent twice and squinting. Both modes
+  share the normaliser, the shape extraction, and the diff — so the shared core gets written once,
+  proven under conditions where every difference is a real bug, and only then pointed at a noisy
+  signal.</p>
+</div>
+
+<h2 id="artifact">What a golden file actually is</h2>
+
+<p>A pretty-printed JSON file containing the <em>normalised</em> ATIF trajectory, committed next to the
+test that produced it: <code>packages/nooa-bench/tests/golden/&lt;test_name&gt;.json</code>. Frozen-mode
+tests get a sibling <code>&lt;test_name&gt;.llm.json</code> holding the recorded model responses.</p>
+
+<p>Committing the full normalised trajectory rather than a summary is the single most valuable
+decision in this design, and it is worth being explicit about why. When a test fails, the assertion
+message tells you <em>that</em> step count went 6 → 8. The committed file tells you <em>what those two
+extra steps were</em> — in the PR diff, in review, without re-running anything. The file is the
+documentation of the agent's behaviour, and a behavioural change becomes a reviewable diff rather
+than a number that moved.</p>
+
+<p>Both files are plain JSON with sorted keys and two-space indent, so <code>git diff</code> is
+readable and merge conflicts are resolvable by hand.</p>
+
+<h2 id="diff">The diff: normalise → shape → delta</h2>
+
+<p>Three pure functions on <code>Trajectory</code>, in one new module. No classes, no config, no
+plugin architecture.</p>
+
+<h3>1 · <code>normalize(traj) -&gt; dict</code></h3>
+
+<p>Strips everything that varies between two identical runs. The exact list must come from
+observation, not from reading source — that is what phase&nbsp;1 exists for — but the known candidates
+are: <code>timestamp</code> on every step, <code>session_id</code> and <code>trajectory_id</code> at
+every level, <code>tool_call_id</code> and its matching <code>source_call_id</code> (rewritten to
+<code>call_1</code>, <code>call_2</code>… preserving the join rather than deleting it),
+<code>cost_usd</code>, <del>absolute paths appearing in observations, and any <code>duration</code> or
+latency field</del>. <code>schema_version</code> is <em>kept</em> — a schema bump must invalidate
+goldens loudly.</p>
+
+<div class="was">
+  <p><span class="tag">was</span> <strong>The guessed list was wrong in both directions.</strong> Two
+  members never appeared — no absolute path and no duration field showed up in any observed diff, so
+  scrubbing them would have been dead code written against an imagined failure. Two real ones were
+  missing: <code>extra.generation_id</code> (a fresh uuid4 per generation) and object-repr addresses
+  inside message text.</p>
+  <p>Below is what the module actually contains. <code>cost_usd</code> is the one entry kept on
+  faith — it was never observed varying, because a stubbed client reports zero cost. It is scrubbed
+  defensively on the assumption that live pricing moves, and that assumption is untested.</p>
+</div>
+
+<pre><code># nooa_bench/trajectory.py  — as built
+VOLATILE_FIELDS = (
+    "session_id", "trajectory_id",   # fresh per run
+    "timestamp",                     # wall clock, on every step
+    "generation_id",                 # uuid4 per generation, under step.extra
+    "cost_usd", "total_cost_usd",    # varies with live pricing (assumed)
+)
+
+# NOOA renders the execution context into the system prompt, so anything in
+# scope without a __repr__ arrives as "&lt;function f at 0x7f3c...&gt;".
+_ADDRESS = re.compile(r"0x[0-9a-fA-F]{6,16}")
+
+def normalize(traj, *, sort_subagents=True) -> dict:
+    """ATIF trajectory -> stable dict, safe to compare and to commit."""
+    d = traj.model_dump(mode="json", exclude_none=True)
+    return _normalize_one(json.loads(json.dumps(d)), sort_subagents)
+
+def _normalize_one(d, sort_subagents):
+    _scrub(d)                     # delete volatile keys, mask 0x... in strings
+    _renumber_call_ids(d)         # call_1, call_2, ... join preserved
+    subs = d.get("subagent_trajectories")
+    if subs:
+        subs = [_normalize_one(s, sort_subagents) for s in subs]
+        if sort_subagents:        # gather completes out of order
+            subs.sort(key=lambda s: json.dumps(s, sort_keys=True))
+        d["subagent_trajectories"] = subs
+    return d
+</code></pre>
+
+<p>The recursion and the subagent sort were not in the sketch. Both are load-bearing: a five-way
+<code>asyncio.gather</code> fan-out produces five embedded subagent trajectories that arrive in
+completion order, so without a content-derived sort the golden differs on every run. The plan
+flagged this as a risk; it materialised on the first try.</p>
+
+<h3>2 · <code>shape(traj) -&gt; Shape</code></h3>
+
+<p>A small dataclass holding the things you want to assert on, extracted from the normalised dict:
+step count, the ordered list of <code>(source, llm_call_count)</code> pairs, the ordered list of
+called function names, the number of distinct subagent trajectories, whether the run crashed, and
+total prompt/completion tokens. Roughly ten fields.</p>
+
+<p>The split matters. <strong>Shape is what you assert on; the normalised dict is what you commit and
+read.</strong> Asserting on the full dict makes every whitespace change in a model reply a test
+failure. Asserting only on the shape makes the failure message legible — "step count 6 → 8,
+functions called: <code>execute_python</code> ×3 → ×5" — while the committed file still carries the
+detail for whoever investigates.</p>
+
+<div class="was">
+  <p><span class="tag">was</span> <strong>This argument is right for live mode and wrong for frozen
+  mode, and the plan applied it to both.</strong> "Every whitespace change in a model reply" is a
+  problem only when the model is free to vary its wording. Under frozen replay the reply is fixed, so
+  a content change means something in your code produced a different value — precisely the thing
+  worth catching.</p>
+  <p>The consequence was concrete: a trajectory with identical structure but a different computed
+  result compared equal, the test stayed green, and the committed golden silently described
+  behaviour that no longer happened. <code>Shape</code> gained an eleventh field,
+  <code>content_hash</code> — a SHA-256 prefix over the whole normalised trajectory — compared
+  exactly by default and skipped via <code>compare_content=False</code> against a live model. Deltas
+  sort it last, so the named structural fields are what a reader sees first and the hash only says
+  "and something else moved too".</p>
+  <p>It paid for itself immediately: the memory-address leak was found by this check, not by
+  inspection.</p>
+</div>
+
+<h3>3 · <code>diff(golden, actual, *, token_tolerance=0.0, compare_content=True) -&gt; list[Delta]</code></h3>
+
+<p>Compares two shapes field by field, returns a list of <code>Delta(field, golden, actual)</code>.
+Token fields compare within a tolerance — <code>0.0</code> in frozen mode where equality is
+achievable, something like <code>0.15</code> in live mode. Empty list means pass. For the human-facing
+report, hand the two normalised dicts to <code>difflib.unified_diff</code> over their pretty-printed
+JSON lines; that is the entire rendering layer.</p>
+
+<h3>4 · <code>capture(agent, awaitable) -&gt; Trajectory</code></h3>
+
+<p>Twenty lines wrapping <code>atif_scope</code>: point the scope at a temporary directory, run the
+awaitable inside it, return <code>exporter.get_trajectory()</code>.
+<del>Call <code>assert_atif_normative()</code> on the result.</del> The temp directory is not
+decoration — see the correction under <code>atif_scope</code> above.</p>
+
+<h2 id="phases">Phases</h2>
+
+<div class="card phase">
+  <h3><span class="num">0</span> Prove the ground is solid <span class="cost">half a day</span></h3>
+  <p>Everything above is read from source and has never been run — the same gap the doc set has. Before
+  writing new code, execute <code>tests/atif/test_end_to_end_codeact.py</code> and
+  <code>examples/quickstart/14_atif_trajectory.py</code> and confirm that a trajectory comes out where
+  the source says it does. This is also where the environment gets built:
+  <code>uv sync --group dev</code>, and a container if you intend to run CodeAct against anything real.</p>
+  <div class="check miss"><strong>Acceptance: half met.</strong> The ATIF suite passes — 126 tests, all
+  green. Quickstart 14 was <em>not</em> run: it calls a real model and no key was available. The
+  substitute was <code>tests/atif/test_end_to_end_codeact.py</code>, which exercises the same
+  export path with a stubbed client, plus a hand-written script that round-tripped a captured
+  trajectory through <code>Trajectory.model_validate_json()</code>. Adequate, but not what the plan
+  asked for, and it left the live path unexercised right through to the end.</div>
+  <div class="was">
+    <p><span class="tag">was</span> <strong>"<code>uv sync --group dev</code> and go" does not work on
+    Windows.</strong> <code>src/nooa/storage/sqlite.py:10</code> imports <code>fcntl</code>, which is
+    POSIX-only, so importing <code>nooa</code> at all fails before any test collects. The repo
+    declares no platform support either way; this is simply not a supported host.</p>
+    <p>Everything here therefore ran in WSL Ubuntu, with the virtualenv outside the Windows
+    filesystem (<code>UV_PROJECT_ENVIRONMENT=$HOME/nooa-venv</code>) to avoid the 9p I/O penalty and a
+    clash with the half-built Windows <code>.venv</code>. Use <code>uv run --frozen</code>: a plain
+    <code>uv run</code> on Linux adds an sdist entry to <code>uv.lock</code>, which dirties a tracked
+    file in what is meant to be a pristine upstream clone.</p>
+  </div>
+</div>
+
+<div class="card phase">
+  <h3><span class="num">1</span> Spike: find out what actually varies <span class="cost">2 hours</span></h3>
+  <p>Write one throwaway script that runs the same stubbed CodeAct agent twice, dumps both trajectories
+  to JSON, and diffs them with <code>difflib</code>. Every line that differs is a field the normaliser
+  must handle. Do not skip this and design the normaliser from the schema — the schema tells you what
+  fields exist, not which ones are unstable, and the surprises live in the gap between those two.
+  Suspects worth watching for: REPL variable naming, <code>asyncio.gather</code> completion order in
+  fan-out, dict iteration order in <code>arguments</code>, and anything embedding a path or a PID.</p>
+  <div class="check miss"><strong>Acceptance: passed, and the deliverable was still wrong.</strong>
+  The spike ran, diffed cleanly, and produced four observed volatile fields — <code>session_id</code>,
+  <code>trajectory_id</code>, <code>timestamp</code>, <code>generation_id</code> — out of 20 differing
+  lines in 135. Every one was observed rather than guessed, exactly as required. It missed the fifth
+  class entirely.</div>
+  <div class="was">
+    <p><span class="tag">was</span> <strong>"One throwaway script" is the flaw.</strong> A standalone
+    script has a different module namespace than a pytest test module, and NOOA renders that
+    namespace into the system prompt. The script's prompt therefore contained no
+    <code>&lt;function ... at 0x...&gt;</code> reprs, so no address churn appeared in the diff — and
+    the omission only surfaced two phases later, when the goldens failed on a second run for reasons
+    the normaliser had no answer for.</p>
+    <p><strong>Rewrite this phase as: run the spike as a pytest test, in the directory layout you
+    intend to ship, with the fixture agents where they will actually live.</strong> The cost is the
+    same two hours. The second observation from the spike was correct and important:
+    <code>asyncio.gather</code> fan-out really does emit its five subagent trajectories in
+    nondeterministic order, and 276 of 247 lines differed until they were content-sorted.</p>
+  </div>
+</div>
+
+<div class="card phase">
+  <h3><span class="num">2</span> The core: normalise, shape, diff <span class="cost">1 day</span></h3>
+  <p>One new module, <code>packages/nooa-bench/src/nooa_bench/trajectory.py</code>, containing the four
+  functions above and the <code>Shape</code> / <code>Delta</code> dataclasses. Pure functions on
+  Pydantic models — no I/O, no globals, no async. Unit-tested against trajectories built by hand and
+  against the fixtures already in <code>tests/atif/</code>.</p>
+  <p>The tests that matter here are the negative ones: two trajectories differing only in timestamps
+  must produce zero deltas, and two differing by one extra step must produce exactly one delta naming
+  the step count.</p>
+  <div class="check"><strong>Acceptance: met.</strong> <code>normalize(t) == normalize(t)</code> byte
+  for byte across two runs, for both the CodeAct case and the fan-out case, where phase&nbsp;1 showed
+  20 and 276 differing lines respectively. 26 unit tests, all on hand-built dicts except three that
+  run real agents. The negative tests the plan singled out both exist and both pass.</div>
+  <p class="src">Deviation: the module is 419 lines rather than the implied ~300, mostly because
+  <code>normalize</code> recurses into subagents and <code>check</code> carries the golden-file I/O
+  that the plan had left unassigned to any function.</p>
+</div>
+
+<div class="card phase">
+  <h3><span class="num">3</span> The pytest plugin <span class="cost">1 day</span></h3>
+  <p>A <code>golden_trajectory</code> fixture plus a <code>--golden-update</code> flag,
+  <del>registered through <code>[project.entry-points.pytest11]</code> in
+  <code>packages/nooa-bench/pyproject.toml</code> so it activates on install with no
+  <code>conftest.py</code> plumbing</del>. On a miss it fails with the unified diff and the exact
+  command to re-record. With <code>--golden-update</code> it rewrites the file and reports what
+  changed rather than passing silently.</p>
+
+  <div class="was">
+    <p><span class="tag">was</span> <strong>A <code>conftest.py</code> instead — because the entry
+    point requires editing a tracked file.</strong> <code>labs-OO-Agents</code> is a pristine clone of
+    NVIDIA's repository, not a fork, and adding a <code>pytest11</code> entry to its
+    <code>pyproject.toml</code> would modify tracked upstream content for a change that has not been
+    proposed to anyone yet. A conftest keeps the entire contribution additive: <code>git status</code>
+    shows ten new untracked files and zero modifications.</p>
+    <p>The trade the plan was avoiding is real — <code>pytest_addoption</code> is only honoured in an
+    <em>initial</em> conftest, so the flag could have failed on some invocations. It was tested from
+    the repository root and works, because <code>testpaths</code> already names this directory. An
+    <code>GOLDEN_UPDATE=1</code> environment variable is wired as a fallback for invocations where it
+    would not.</p>
+    <p>The fixture is a plain callable rather than an object with a <code>.check()</code> method:
+    <code>await golden_trajectory(agent, agent.run(...))</code>. One less name to remember, and
+    nothing was lost.</p>
+  </div>
+
+<pre><code>async def test_codeact_three_turn_run(golden_trajectory, codeact_agent):
+    agent = codeact_agent(turns=3)
+    await golden_trajectory(agent, agent.run("compute 2+2"))
+    # miss -> unified diff + "if this change is intended: pytest --golden-update"
+</code></pre>
+  <p>Missing golden file on a normal run is a <em>failure</em>, not an auto-create. Auto-creating means
+  a test that has never actually asserted anything can sit green in CI forever.</p>
+  <div class="check"><strong>Acceptance: met, twice over.</strong> Editing the fixture agent's
+  docstring produced a failure naming <code>content_hash</code> with the before/after prompt visible
+  in the diff. Making the agent take an extra turn produced seven deltas, structural ones first:
+  <code>step_count: 3 → 4</code>, <code>functions: ('return_result',) → ('execute_python',
+  'return_result')</code>, <code>llm_calls: 1 → 2</code>, tokens doubled. That second message is
+  exactly what the summary promised this tool would print.</div>
+</div>
+
+<div class="card phase">
+  <h3><span class="num">4</span> Frozen mode: record and replay the model <span class="cost">1 day</span></h3>
+  <p>A <code>RecordingLLM</code> wrapper around any <code>UnifiedLLM</code> that stores each
+  <code>LLMResponse</code> as it passes through — <code>content</code>, <code>tool_calls</code>,
+  <code>finish_reason</code>, <code>assistant_message</code>, <code>usage</code>; not
+  <code>raw_response</code>, which is provider-specific and may not serialise. Replay reconstructs
+  <code>LLMResponse</code> objects and hands them to <code>FakeLLMClient</code>.</p>
+  <p>One deliberate deviation from the existing fake: replay must <strong>raise</strong> when the script
+  is exhausted rather than returning an empty response. An agent that makes more LLM calls than it did
+  when recorded is exactly the regression this project exists to catch, and the current
+  fail-soft behaviour would hide it inside a confusing downstream error.</p>
+  <div class="check"><strong>Acceptance: now met as written.</strong> Recorded once against
+  <code>qwen2.5:1.5b</code> on a local Ollama, then replayed twenty times with no network — one
+  distinct trajectory, byte-identical to the live original. It did not pass first time: see
+  <a href="#unverified">bug 1</a>, where the replayed trajectory differed from its own recording on
+  the <code>model_name</code> line, a failure no amount of fake-client testing could have produced.</div>
+  <div class="was">
+    <p><span class="tag">was</span> <strong>The strategy wraps the exhaustion error.</strong> Replay
+    raises <code>ScriptExhausted</code> as designed, but <code>CodeActStrategy</code> treats any
+    client exception as a transient API error: it retries three times and re-raises as
+    <code>GenerationError</code>. The message survives intact, which is what a person reading a CI log
+    needs, and the test asserts on that rather than pretending the raw exception propagates. Worth
+    knowing before you write <code>pytest.raises(ScriptExhausted)</code> and watch it fail.</p>
+  </div>
+</div>
+
+<div class="card phase">
+  <h3><span class="num">5</span> CI wiring <span class="cost"><del>2 hours</del> free</span></h3>
+  <p><del>Add <code>packages/nooa-bench/tests</code> to <code>testpaths</code>.</del> Frozen tests run
+  in the existing PR job — no key, no marker, no special casing. Live tests carry the existing
+  <code>integration</code> marker and run on a schedule. When a golden file changes in a PR, that diff
+  <em>is</em> the review artifact; no dashboard is needed to make it visible.</p>
+  <div class="was">
+    <p><span class="tag">was</span> <strong>Nothing to do.</strong> <code>testpaths</code> already
+    lists <code>packages/nooa-bench/tests</code>, and <code>.github/workflows/ci.yml:38</code> already
+    runs <code>uv run pytest -q -m "not integration and not stress"</code> from the repository root.
+    The tests were gated the moment the files existed. No workflow file, no config change, no edit to
+    anything tracked.</p>
+    <p>This is the one estimate that was wrong in the pleasant direction, and it was wrong for an
+    unflattering reason: I read the <code>testpaths</code> list, recognised the <code>nooa-cli</code>
+    entry, and stopped before the next line.</p>
+  </div>
+  <div class="check miss"><strong>Acceptance: cannot be met from here.</strong> The check requires
+  opening a pull request against a repository that is not ours to push to. What was verified instead:
+  the tests collect and pass under the exact command CI runs, the full suite still passes (6,417
+  tests), and <code>--golden-update</code> parses correctly from a bare root invocation — the one
+  failure mode the conftest approach risked.</div>
+</div>
+
+<div class="card phase">
+  <h3><span class="num">6</span> Upstream <span class="cost">open-ended</span></h3>
+  <p>Read <code>CONTRIBUTING.md</code> and <code>AGENTS.md</code> first. The pitch is narrow and
+  therefore credible: "trajectory diffing and a golden-file pytest fixture for
+  <code>nooa-bench</code>", one module plus one plugin, no new dependencies, following the package's
+  existing conventions. Land the core module before proposing the plugin — a pure-function differ is
+  easy to accept, and a pytest plugin that ships in a distribution is a policy decision someone else
+  owns.</p>
+  <div class="check miss"><strong>Not started.</strong> This is a human action against a third-party
+  repository, and the open question in <code>HANDOFF.md</code> — whether this clone should become a
+  fork at all — has to be answered before it can begin.</div>
+</div>
+
+<h2 id="unverified">The live run, and what is still unverified</h2>
+
+<p><strong>Revision 3: the Ollama run recommended below has now been done</strong>, against
+<code>qwen2.5:1.5b</code> (986 MB, no API key). It was worth an afternoon: it found two more real
+bugs, one of which could not have been found any other way. Fifty-three frozen tests and four live
+tests now pass.</p>
+
+<div class="was">
+  <p><span class="tag">was</span> <strong>The bug I predicted was not the bug I had.</strong> The
+  original text below singled out <code>_to_json</code>'s Pydantic branch as "the obvious way to find
+  out it is wrong". That branch did execute — <code>PredictStrategy</code> returns
+  <code>content</code> as a generated model, <code>CapitalOfResponse(value='Tokyo')</code> — and it
+  was <em>correct</em>. Serialising it to JSON text and letting the strategy re-parse on replay
+  produced an identical trajectory.</p>
+  <p>What actually broke was one line away and unguessed. See below.</p>
+</div>
+
+<div class="card">
+  <h3>Bug 1 · A live recording could never match its own replay</h3>
+  <p>NOOA copies the client's model into every agent step as <code>model_name</code>.
+  <code>FakeLLMClient</code> calls itself <code>fake-model</code>. So a trajectory recorded against
+  <code>ollama_chat/qwen2.5:1.5b</code> and then replayed differed on exactly one line —
+  <code>"model_name": "ollama_chat/qwen2.5:1.5b"</code> versus <code>"fake-model"</code> — which is
+  enough to fail its own golden. Frozen mode was, in the only way that matters, broken.</p>
+  <p><strong>This is invisible when the recording client is itself a fake</strong>, which is why
+  five green record/replay tests never caught it. The script now stores the recorded model name and
+  <code>replay()</code> reports it. <code>model_name</code> is deliberately <em>not</em> scrubbed:
+  noticing a model swap is a headline use of this tool, so the fix has to be to carry the name
+  forward, not to delete the field.</p>
+</div>
+
+<div class="card">
+  <h3>Bug 2 · CodeAct does not work against Ollama out of the box</h3>
+  <p>Any tool-using strategy fails with
+  <code>litellm.UnsupportedParamsError: ollama_chat does not support parameters:
+  ['parallel_tool_calls']</code>, retried three times and re-raised as <code>GenerationError</code>.
+  This is not a bug in this project — it sits between NOOA, LiteLLM and Ollama — but it contradicts
+  the ideas document's claim that "local models are first-class: Ollama and vLLM are both supported
+  through LiteLLM with no API key". That holds for plain generation. It does not hold for CodeAct,
+  which is the framework's headline strategy.</p>
+  <p>Setting <code>litellm.drop_params = True</code> fixes it, and with that CodeAct ran and returned
+  a real tool call. The live tests set it in a fixture and restore it afterwards, rather than in the
+  library — it is global mutable state on <code>litellm</code> and belongs to the caller.</p>
+</div>
+
+<div class="card">
+  <h3>What the live run confirmed</h3>
+  <ul>
+    <li><strong>Real tool-call ids renumber correctly.</strong> The provider emitted
+    <code>call_3hfgfv2c</code>; the normaliser produced <code>call_1</code>. Until this run every id
+    the harness had ever seen was one the fixtures had pinned by hand.</li>
+    <li><strong>Two live runs agreed structurally</strong> under live settings
+    (<code>token_tolerance=0.15</code>, <code>compare_content=False</code>) — and, on this model and
+    prompt, produced zero differing lines even under frozen settings.</li>
+    <li><strong>Record once, replay twenty times</strong> yields one distinct trajectory, identical
+    to the live original. The phase-4 acceptance check is now met as written.</li>
+    <li><strong>Real <code>usage</code> carries fields the fake never produced</strong> —
+    <code>total_tokens</code>, <code>completion_tokens_details</code>,
+    <code>prompt_tokens_details</code> — and none of them destabilised the golden.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3>Bug 3, which is not a bug · live tests are flaky, and must say so</h3>
+  <p>Running the CodeAct live test repeatedly, roughly one run in three fails with
+  <code>return_result validation failed after 3 attempts</code> — a 1.5B model handing back something
+  that will not coerce to <code>int</code>. Nothing is wrong with the harness. The model is simply
+  not very good.</p>
+  <p><strong>A live test that cannot tell "the harness broke" from "the model was weak today" is
+  worse than no live test</strong>, because it trains you to ignore red. The test now catches
+  <code>GenerationError</code> and skips with the reason. A rerun would have hidden the frequency; a
+  skip reports it. Five consecutive runs of the live suite: four clean, one skip, zero failures.</p>
+  <p>Nothing in the original plan said this. It is the single most transferable lesson here, and it
+  is the concrete form of the claim made further up that live mode "should never block a build".</p>
+</div>
+
+<h3>Still unverified after all that</h3>
+
+<ul>
+  <li><strong><code>cost_usd</code> has still never been observed varying.</strong> Ollama is free
+  and reports no cost, so the assumption that live pricing moves remains untested. A paid provider
+  would settle it.</li>
+  <li><strong>Token banding remains unexercised in anger.</strong> Two live runs of the same prompt
+  produced <em>identical</em> token counts, so <code>token_tolerance=0.15</code> has still never had
+  to absorb real noise. A larger model at a higher temperature would.</li>
+  <li><strong>One provider, one model, two agent shapes.</strong> Anthropic or OpenAI responses may
+  carry fields Ollama does not — reasoning content, cache tokens, provider-specific
+  <code>extra</code>. The volatile-field list is now evidence-based rather than guessed, but the
+  evidence is still narrow.</li>
+  <li><strong>Golden files rotting into rubber stamps</strong> remains untouched, and no code will
+  fix it.</li>
+</ul>
+
+<div class="card">
+  <h3>The volatile-field list is only as good as two agent shapes</h3>
+  <p>Everything was observed against a CodeAct agent and a fan-out agent. A different strategy, a
+  multimodal run, a context-compaction boundary, or an agent using MCP could all introduce fields
+  that vary and are not scrubbed. The failure mode is benign — a golden that will not stabilise — but
+  it will look like a bug in the harness rather than a missing entry in a tuple.</p>
+</div>
+
+<div class="card">
+  <h3>The address mask is blunt</h3>
+  <p><code>0x[0-9a-fA-F]{6,16}</code> is applied to every string in the trajectory. It will also mask
+  a genuine hex literal in a model's reply or in code the agent wrote. That is harmless for
+  comparison — both sides are masked identically — but it means a golden file cannot be read as a
+  faithful transcript of what the model saw. If an agent's actual work involves hex, this needs
+  narrowing to the <code>&lt;... at 0x...&gt;</code> repr form.</p>
+</div>
+
+<div class="card">
+  <h3>Two risks the plan named are still open</h3>
+  <p><strong>Golden files rotting into rubber stamps</strong> has had nothing done about it beyond
+  keeping the files small. The mitigation was always social, and no amount of code will supply it.</p>
+  <p><strong>ATIF version drift</strong> is handled — a mismatched <code>schema_version</code> raises
+  with a re-record instruction, and there is a test for it — but ATIF has not actually bumped, so the
+  handling is unexercised against a real migration.</p>
+</div>
+
+<h2 id="notbuilding">Deliberately not building</h2>
+
+<p>Each of these is a real feature that a real version of this tool might eventually want. None of
+them is needed to detect a regression, and every one of them is a week that produces no additional
+detection.</p>
+
+<ul>
+  <li><strong>A web dashboard or trajectory viewer.</strong> The repo already ships
+  <code>trace-explorer</code>. Golden diffs render in <code>git diff</code>, which every reviewer
+  already has open.</li>
+  <li><strong>A trajectory database.</strong> Files in git, versioned with the code that produced them.
+  A database is the answer to "query across ten thousand runs", which is a question you do not yet have.</li>
+  <li><strong>A custom tree-diff algorithm.</strong> Normalising to a dict and comparing fields covers
+  the failure modes that matter. Structural tree diffing is where a weekend project becomes a quarter.</li>
+  <li><strong>Statistical flakiness modelling for live mode.</strong> Start with a token tolerance band
+  and equality on structure. Add repetition and confidence intervals only after live mode has produced
+  a false positive you can point at.</li>
+  <li><strong>Semantic comparison of model messages.</strong> Comparing message <em>text</em> across
+  runs is a fool's errand; the shape deliberately compares step structure and call sequences instead.
+  If you later want "did the answer stay correct", that is an eval, and it is a different tool.</li>
+  <li><strong>Support for non-ATIF traces.</strong> The typed schema is the entire reason this is
+  tractable. Generalising to OTel spans throws away the advantage.</li>
+</ul>
+
+<h2 id="risks">Risks, in the order they are likely to bite</h2>
+
+<p>Four of the five below were written before anything ran. In the event, the ordering was roughly
+right and the biggest actual problem was not on the list at all — the prompt-namespace coupling that
+cost a file reorganisation. Risk registers are good at the failures you can imagine.</p>
+
+<div class="card">
+  <h3>Irreducible non-determinism <span class="cost">happened</span></h3>
+  <p>The one that could sink phase&nbsp;2. If step ordering itself varies between two frozen runs —
+  most plausibly through <code>asyncio.gather</code> fan-out, which is exactly the pattern
+  <code>method_writing_lib.py</code> encourages — then no amount of field scrubbing produces a stable
+  golden. <strong>Mitigation:</strong> phase&nbsp;1 finds this in two hours rather than three days. If it
+  bites, the shape becomes order-insensitive at the fan-out boundary — compare a multiset of sibling
+  calls rather than a sequence — and the committed file sorts those siblings by a stable key.</p>
+  <div class="check"><strong>Outcome:</strong> materialised on the first fan-out run and the
+  mitigation worked as written. Five <code>classify</code> calls under one <code>gather</code> emit
+  five embedded subagent trajectories in completion order; 276 lines differed between two runs.
+  Sorting the normalised children by their canonical JSON fixed it. The ceiling is documented in the
+  code: content-sorting also hides a <em>meaningful</em> reordering, so <code>sort_subagents=False</code>
+  exists for pipelines where sequence carries information.</div>
+</div>
+
+<div class="card">
+  <h3>Golden files rot into rubber stamps</h3>
+  <p>The classic failure of every snapshot-testing system: a diff appears, nobody reads it,
+  <code>--golden-update</code> gets run, green returns. <strong>Mitigation is social, not technical</strong>
+  — keep golden files small enough to actually read, make the assertion message name the specific
+  behavioural change, and never auto-create a missing golden.</p>
+</div>
+
+<div class="card">
+  <h3>ATIF version drift</h3>
+  <p><code>schema_version</code> is a <code>Literal["ATIF-v1.7"]</code>. A bump to v1.8 invalidates
+  every golden file at once. <strong>Mitigation:</strong> keep <code>schema_version</code> in the
+  normalised output and fail with "golden recorded under ATIF-v1.7, running v1.8 — re-record" rather
+  than emitting a thousand-line diff.</p>
+</div>
+
+<div class="card">
+  <h3>Recording touches real systems</h3>
+  <p>Phase&nbsp;4 records against a real model, and CodeAct executes model-generated Python. The
+  README is explicit at lines 130–133 that its AST checks and deny-lists are
+  "defense-in-depth guardrails, not a containment boundary". <strong>Mitigation:</strong> record inside a
+  container or VM. This applies only to recording — once the script exists, replay is inert.</p>
+  <div class="check"><strong>Outcome: never tested, and still binding.</strong> No live recording
+  happened, so no generated code ever ran against a real system. The constraint applies in full the
+  moment someone does the Ollama run recommended above. Note that the work here ran in WSL, which is
+  a VM boundary but not an isolated one — the Windows filesystem is mounted at
+  <code>/mnt/c</code>.</div>
+</div>
+
+<div class="card">
+  <h3>Experimental strategies as test subjects</h3>
+  <p><code>CodeActLiteStrategy</code> and <code>ReflexionStrategy</code> are gated behind a
+  <code>FutureWarning</code> and re-exported lazily so the warning cannot be bypassed. Goldens recorded
+  against them sit on an unstable API. <strong>Mitigation:</strong> build the fixture agents on
+  <code>CodeActStrategy</code> and <code>PredictStrategy</code>; treat the experimental ones as a later
+  test case, not a foundation.</p>
+</div>
+
+<h2 id="effort">Effort and sequencing</h2>
+
+<table>
+  <tr><th>Phase</th><th>Estimated</th><th>What it actually left behind</th></tr>
+  <tr><td>0 · Prove the ground</td><td>½ day</td><td>A WSL environment (Windows cannot run this repo); 126 ATIF tests green; quickstart 14 skipped</td></tr>
+  <tr><td>1 · Spike</td><td>2 hours</td><td>Four of the five volatile-field classes. Green acceptance, incomplete answer</td></tr>
+  <tr><td>2 · Core functions</td><td>1 day</td><td><code>trajectory.py</code>, 419 lines, 26 unit tests</td></tr>
+  <tr><td>3 · pytest plugin</td><td>1 day</td><td>The usable product — conftest fixture, 3 committed goldens, both failure demos verified</td></tr>
+  <tr><td>4 · Frozen mode</td><td>1 day</td><td><code>recording.py</code>, 157 lines, 5 tests. Never pointed at a real model</td></tr>
+  <tr><td>5 · CI wiring</td><td><del>2 hours</del> free</td><td>Nothing — already wired upstream</td></tr>
+  <tr><td>6 · Upstream</td><td>open</td><td>Not started; blocked on the fork question in <code>HANDOFF.md</code></td></tr>
+</table>
+
+<p><del><strong>Roughly three focused days to something you would use, four and a half to something you
+would defend in a PR.</strong></del> That is materially cheaper than the "substantial" label in the
+project write-up, and the reason is the whole point of the ranking: NOOA already ships the expensive
+half. Typed trajectories, always-on nested tracing, and re-instantiable agents are the three things
+this needs, and having all three is why the project is three days here and three weeks elsewhere.</p>
+
+<div class="was">
+  <p><span class="tag">was</span> <strong>I cannot honestly report a day count, and it would be
+  misleading to try.</strong> Phases 0–5 were built in one agent session, which says nothing useful
+  about how long a person would take. The estimate is left in place unrevised because the claim it
+  supports — that this is days rather than weeks, <em>because</em> NOOA supplies the expensive half —
+  did hold. Nothing in the build required inventing infrastructure; every phase was assembly.</p>
+  <p>What can be reported honestly is the shape of the work. Roughly <strong>half the elapsed effort
+  went into the three findings in the revision log</strong>, not into the functions the plan
+  described. Writing <code>normalize</code>, <code>shape</code> and <code>diff</code> was
+  straightforward. Discovering that prompts contain memory addresses, that conftest membership
+  changes those prompts, and that shape comparison alone leaves a hole took several failed runs each,
+  and each one arrived as a mysterious test failure rather than an obvious bug. Budget for that, not
+  for the line count.</p>
+</div>
+
+<div class="note">
+  <p><strong>One sequencing note that survives from the ideas document.</strong> Building project 01
+  first — the portfolio analyst — is still the right move, and this plan sharpens why rather than
+  softening it. Phase&nbsp;1 asks you to look at a trajectory diff and judge which differences are
+  noise and which are behaviour. That judgment is much easier if you have already watched your own
+  agent go wrong a few hundred times. Without it, phase&nbsp;1 is guesswork dressed up as observation.</p>
+  <p><strong>Building it first, out of order, sharpened this further rather than refuting it.</strong>
+  Phase&nbsp;1 <em>was</em> guesswork dressed up as observation — it produced a confident list that
+  was missing an entire class of volatile field, and nothing in the acceptance check could tell. Two
+  agent shapes were enough to build against and are visibly not enough to trust. Someone who had
+  already watched a few hundred of their own traces would have looked at that clean four-item list
+  and asked what else was in the prompt.</p>
+</div>
+
+<h2 id="state">Current state</h2>
+
+<p>Ten new files under <code>packages/nooa-bench/</code>, all untracked; zero tracked files modified,
+so <code>git status</code> in the clone shows only additions and the pre-existing <code>docs/</code>.
+The clone remains pristine, which keeps the open question in <code>HANDOFF.md</code> — leave
+untracked, branch, fork, or relocate — open rather than answered by accident.</p>
+
+<pre><code>packages/nooa-bench/
+  src/nooa_bench/trajectory.py   419   capture / normalize / shape / diff / render / check
+  src/nooa_bench/recording.py    190   RecordingLLM, strict replay, model-name carry-forward
+  tests/conftest.py              135   golden_trajectory fixture + --golden-update
+  tests/golden_agents.py         101   fixture agents — namespace kept small on purpose
+  tests/test_trajectory.py       314   26 tests
+  tests/test_recording.py        126   7 tests
+  tests/test_golden.py            34   3 golden tests
+  tests/test_live_ollama.py      185   4 live tests (deselected by default)
+  tests/golden/*.json            373   3 committed goldens
+
+frozen:    uv run --frozen pytest packages/nooa-bench/tests           # 53 passed, 4 deselected
+re-record: uv run --frozen pytest packages/nooa-bench/tests --golden-update
+live:      OLLAMA_API_BASE=http://&lt;host&gt;:11434 \
+             uv run --frozen pytest packages/nooa-bench/tests/test_live_ollama.py -m integration
+</code></pre>
+
+<p>Verified: 53 frozen tests pass and 4 live tests pass against a real Ollama; the live suite skips
+cleanly when no endpoint is reachable, so CI is unaffected; the full repository suite passes (6,417
+tests, 5 skipped — the four MCP collection errors are pre-existing, from the uninstalled
+<code>mcp</code> extra); <code>ruff check</code> and <code>ruff format --check</code> clean; goldens
+byte-stable across repeated runs; both failure demonstrations produce the messages quoted in
+phase&nbsp;3; <code>capture()</code> leaves the working tree clean.</p>
+
+<div class="note">
+  <p><strong>Reproducing the live run on this machine.</strong> Ollama is installed at
+  <code>%LOCALAPPDATA%\Programs\Ollama</code> but had no models; <code>ollama pull qwen2.5:1.5b</code>
+  fetched 986 MB. It must be started with <code>OLLAMA_HOST=0.0.0.0</code> for WSL to reach it, and
+  <code>OLLAMA_API_BASE</code> must point at the WSL gateway address from
+  <code>ip route show default</code> — not <code>localhost</code>, which in WSL is WSL itself.</p>
+</div>
+
+<footer>
+  Revision 3 — phases 0–5 built and run against both a stubbed client and a live local model;
+  phase 6 not started. Corrections are marked
+  <span class="tag">was</span> in place with the original claim preserved. Every file, symbol and line
+  reference was checked against the working tree at HEAD <code>0cccda1</code>. Live-model behaviour is now executed rather than inferred, on one model and one provider — see <a href="#unverified">what is still
+  unverified</a>, which is the part of this document most likely to be hiding the next surprise.
+  Apache 2.0 framework; this plan unencumbered.
+</footer>
+
+</div>
+</body>
+</html>

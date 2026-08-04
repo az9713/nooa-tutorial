@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projects to build on NOOA</title>
+<style>
+  :root {
+    --bg: #fbfaf8;
+    --panel: #ffffff;
+    --ink: #1c1b19;
+    --ink-soft: #57534e;
+    --ink-faint: #8a837c;
+    --rule: #e5e1db;
+    --accent: #76b900;          /* NVIDIA green */
+    --accent-ink: #4a7500;
+    --warn-bg: #fdf6e7;
+    --warn-rule: #e0c469;
+    --warn-ink: #6b5310;
+    --code-bg: #f4f2ee;
+    --high: #76b900;
+    --med: #d99a1f;
+    --low: #a8a29d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16150f;
+      --panel: #1d1c16;
+      --ink: #ece9e2;
+      --ink-soft: #b3ada2;
+      --ink-faint: #837d73;
+      --rule: #33312a;
+      --accent: #8fd41a;
+      --accent-ink: #a7dd4d;
+      --warn-bg: #2a2313;
+      --warn-rule: #6b5a24;
+      --warn-ink: #e0c469;
+      --code-bg: #24231c;
+      --high: #8fd41a;
+      --med: #d9a83f;
+      --low: #6d675e;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
+  }
+  .wrap { max-width: 46rem; margin: 0 auto; padding: 3.5rem 1.5rem 6rem; }
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+  .eyebrow {
+    font: 600 0.72rem/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent-ink); margin-bottom: 0.9rem;
+  }
+  h1 { font-size: clamp(1.9rem, 5vw, 2.7rem); line-height: 1.12; margin: 0 0 0.6rem; letter-spacing: -0.02em; }
+  .standfirst { font-size: 1.06rem; color: var(--ink-soft); margin: 0; max-width: 34rem; }
+  .meta { font: 0.78rem/1.5 ui-sans-serif, system-ui, sans-serif; color: var(--ink-faint); margin-top: 1.2rem; }
+
+  h2 {
+    font-size: 1.35rem; letter-spacing: -0.01em; margin: 3.2rem 0 1rem;
+    padding-bottom: 0.4rem; border-bottom: 1px solid var(--rule);
+  }
+  h3 { font-size: 1.02rem; margin: 1.6rem 0 0.4rem; }
+  p { margin: 0 0 1rem; }
+  a { color: var(--accent-ink); }
+
+  code, .mono {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 0.87em;
+    background: var(--code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--rule); border-radius: 6px;
+    padding: 0.9rem 1rem; overflow-x: auto; margin: 1rem 0;
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 0.82rem; line-height: 1.55;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  .note {
+    background: var(--warn-bg); border-left: 3px solid var(--warn-rule);
+    padding: 0.9rem 1.1rem; margin: 1.4rem 0; border-radius: 0 4px 4px 0;
+    color: var(--warn-ink); font-size: 0.94rem;
+  }
+  .note strong { color: inherit; }
+
+  /* ---- leverage points ---- */
+  .lever { border-left: 2px solid var(--rule); padding-left: 1rem; margin: 1.3rem 0; }
+  .lever h3 { margin-top: 0; }
+  .lever .src { font: 0.75rem/1.4 ui-sans-serif, system-ui, sans-serif; color: var(--ink-faint); }
+
+  /* ---- project cards ---- */
+  .project {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 8px;
+    padding: 1.5rem 1.6rem; margin: 1.6rem 0;
+  }
+  .project > h3 {
+    margin: 0 0 0.2rem; font-size: 1.2rem; letter-spacing: -0.01em;
+    display: flex; align-items: baseline; gap: 0.55rem; flex-wrap: wrap;
+  }
+  .num {
+    font: 700 0.78rem/1 ui-sans-serif, system-ui, sans-serif;
+    background: var(--accent); color: #12200a;
+    padding: 0.28em 0.55em; border-radius: 4px; flex: none;
+  }
+  .effort {
+    font: 600 0.68rem/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--ink-faint); border: 1px solid var(--rule);
+    padding: 0.3em 0.5em; border-radius: 3px; flex: none;
+  }
+  .label {
+    font: 600 0.7rem/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.11em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 1.3rem 0 0.35rem;
+  }
+  .verdict {
+    margin-top: 1.3rem; padding-top: 1rem; border-top: 1px dashed var(--rule);
+    font-size: 0.95rem;
+  }
+  .score {
+    display: inline-block; font: 700 0.7rem/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.32em 0.6em; border-radius: 3px; color: #12200a;
+  }
+  .s-high { background: var(--high); }
+  .s-med  { background: var(--med); }
+  .s-low  { background: var(--low); color: #fff; }
+
+  ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+  li { margin-bottom: 0.4rem; }
+  .feat { list-style: none; padding-left: 0; }
+  .feat li { padding-left: 1.4rem; position: relative; }
+  .feat li::before {
+    content: "▸"; position: absolute; left: 0; color: var(--accent); font-size: 0.9em;
+  }
+  .feat li.no::before { content: "×"; color: var(--ink-faint); }
+
+  /* ---- matrix ---- */
+  .scroller { overflow-x: auto; margin: 1.4rem 0; border: 1px solid var(--rule); border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; font: 0.82rem/1.4 ui-sans-serif, system-ui, sans-serif; }
+  th, td { padding: 0.55rem 0.7rem; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  th { background: var(--code-bg); font-weight: 600; font-size: 0.74rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-soft); }
+  tbody tr:last-child td { border-bottom: none; }
+  td.y { color: var(--accent-ink); font-weight: 700; text-align: center; }
+  td.p { color: var(--med); font-weight: 700; text-align: center; }
+  td.n { color: var(--ink-faint); text-align: center; }
+  .legend { font: 0.78rem/1.5 ui-sans-serif, system-ui, sans-serif; color: var(--ink-faint); margin-top: -0.6rem; }
+
+  /* ---- executive summary ---- */
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  :target { scroll-margin-top: 1.5rem; }
+
+  .exec {
+    background: var(--panel); border: 1px solid var(--rule);
+    border-top: 3px solid var(--accent); border-radius: 8px;
+    padding: 1.6rem 1.7rem; margin: 0 0 2.5rem;
+  }
+  .exec > h2 {
+    margin: 0 0 0.9rem; padding: 0; border: none;
+    font: 600 0.74rem/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent-ink);
+  }
+  .exec p { font-size: 0.97rem; }
+  .exec p:last-of-type { margin-bottom: 0; }
+
+  .podium { margin: 1.3rem 0; }
+  .podium a {
+    display: grid; grid-template-columns: 1.6rem 1fr auto; gap: 0.8rem;
+    align-items: baseline; text-decoration: none; color: inherit;
+    padding: 0.6rem 0.7rem; border-radius: 5px; border: 1px solid transparent;
+  }
+  .podium a:hover, .podium a:focus-visible {
+    background: var(--code-bg); border-color: var(--rule); outline: none;
+  }
+  .podium .pn {
+    font: 700 0.95rem/1 ui-sans-serif, system-ui, sans-serif; color: var(--accent);
+  }
+  .podium .pt { font-weight: 700; font-size: 0.97rem; }
+  .podium .pd {
+    display: block; font-weight: 400; font-size: 0.87rem;
+    color: var(--ink-soft); margin-top: 0.15rem;
+  }
+  .podium .ps {
+    font: 700 0.8rem/1 ui-sans-serif, system-ui, sans-serif; color: var(--ink-faint);
+  }
+  .tag {
+    font: 700 0.62rem/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.32em 0.5em; border-radius: 3px; vertical-align: 0.12em;
+    white-space: nowrap;
+  }
+  .tag-dest { background: var(--accent); color: #12200a; }
+  .tag-start { background: transparent; color: var(--accent-ink); border: 1px solid var(--accent); }
+  .tag-skip { background: transparent; color: var(--ink-faint); border: 1px solid var(--rule); }
+  .axis-note {
+    font-size: 0.9rem; color: var(--ink-soft);
+    border-left: 2px solid var(--rule); padding-left: 0.9rem; margin: 1.3rem 0;
+  }
+
+  nav.jump { margin-top: 1.5rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); }
+  nav.jump h3 {
+    margin: 0 0 0.7rem;
+    font: 600 0.7rem/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink-faint);
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+  .chips a {
+    font: 500 0.83rem/1 ui-sans-serif, system-ui, sans-serif;
+    text-decoration: none; color: var(--ink-soft);
+    border: 1px solid var(--rule); border-radius: 999px;
+    padding: 0.45em 0.8em; background: var(--bg);
+  }
+  .chips a:hover, .chips a:focus-visible {
+    border-color: var(--accent); color: var(--accent-ink); outline: none;
+  }
+  .chips a.wide { font-weight: 700; color: var(--ink); }
+
+  .tldr {
+    font-size: 0.9rem; color: var(--ink-soft);
+    display: grid; grid-template-columns: 8.5rem 1fr; gap: 0.3rem 0.9rem;
+    margin: 1.2rem 0 0;
+  }
+  .tldr dt {
+    font: 600 0.7rem/1.5 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-faint);
+  }
+  .tldr dd { margin: 0; }
+  @media (max-width: 30rem) {
+    .tldr { grid-template-columns: 1fr; gap: 0.1rem; }
+    .tldr dd { margin-bottom: 0.6rem; }
+  }
+  @media print { nav.jump { display: none; } }
+
+  /* ---- ranking ---- */
+  .rank-row {
+    display: grid; grid-template-columns: 2.2rem 1fr auto; gap: 0.9rem;
+    align-items: baseline; padding: 0.9rem 0; border-bottom: 1px solid var(--rule);
+  }
+  .rank-row:last-of-type { border-bottom: none; }
+  .rank-n {
+    font: 700 1.35rem/1 ui-sans-serif, system-ui, sans-serif;
+    color: var(--ink-faint); text-align: right;
+  }
+  .rank-row.top .rank-n { color: var(--accent); }
+  .rank-name { font-weight: 700; font-size: 1rem; }
+  .rank-why { font-size: 0.92rem; color: var(--ink-soft); margin: 0.25rem 0 0; }
+  .rank-score {
+    font: 700 0.95rem/1 ui-sans-serif, system-ui, sans-serif;
+    color: var(--ink); white-space: nowrap;
+  }
+  .rank-score span { font-weight: 400; font-size: 0.72rem; color: var(--ink-faint); }
+  .bar {
+    height: 5px; border-radius: 3px; background: var(--rule);
+    margin-top: 0.45rem; overflow: hidden;
+  }
+  .bar > i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+  .flip {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 1rem; margin: 1.4rem 0;
+  }
+  .flip > div {
+    border: 1px solid var(--rule); border-radius: 6px; padding: 0.9rem 1rem;
+    background: var(--panel);
+  }
+  .flip h4 {
+    margin: 0 0 0.5rem; font: 600 0.72rem/1.3 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-faint);
+  }
+  .flip ol { margin: 0; padding-left: 1.1rem; font-size: 0.9rem; }
+  .flip li { margin-bottom: 0.2rem; }
+
+  footer {
+    margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--rule);
+    font: 0.82rem/1.6 ui-sans-serif, system-ui, sans-serif; color: var(--ink-faint);
+  }
+  @media print {
+    body { background: #fff; }
+    .project { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">NVIDIA-labs OO Agents · NOOA</div>
+  <h1>Seven projects to build on NOOA</h1>
+  <p class="standfirst">Ideas ranked by how hard they would be to build on any other agent framework — with an honest note on the ones that don't really need NOOA at all.</p>
+  <p class="meta">Grounded in a read of <code>labs-OO-Agents</code> at the checked-out revision. Nothing here has been built or executed; every file reference was verified against source, but no claim about runtime behaviour has been tested.</p>
+</header>
+
+<section class="exec" aria-labelledby="exec-h">
+  <h2 id="exec-h">Executive summary</h2>
+
+  <p>Seven projects that could be built on NVIDIA-labs OO Agents, scored on a single question: <strong>how hard would this be to build on any other agent framework?</strong> Ideas that would work equally well on LangGraph or a hand-rolled tool loop are marked as such rather than padded out.</p>
+
+  <p>The framework has six genuinely distinguishing traits. Two matter most — agents being <em>real Python classes</em> (the axiom everything else derives from) and <em>live objects passed by reference</em> into the model's REPL rather than serialized to JSON. A third, always-on typed ATIF trajectories, is the most underrated. Code-as-action is impactful but <em>not</em> unique — it is published prior art, and projects resting on it alone score poorly.</p>
+
+  <p class="axis-note"><strong>Two orderings, do not confuse them.</strong> <em>Rank</em> answers "which project is worth the most?" <em>Sequence</em> answers "which do you open your editor on Saturday?" They disagree, deliberately — the highest-value project is not the best first move.</p>
+
+  <div class="podium">
+    <a href="#p03">
+      <span class="pn">#1</span>
+      <span class="pt">Golden-trajectory regression CI <span class="tag tag-dest">the destination</span>
+        <span class="pd">Highest-ranked. Needs typed trajectories, nested tracing and re-instantiable agents at once — a combination no other framework offers. Compounds: makes every other project here measurable rather than anecdotal.</span>
+      </span>
+      <span class="ps">4.25</span>
+    </a>
+    <a href="#p01">
+      <span class="pn">#2</span>
+      <span class="pt">Portfolio analyst over live objects <span class="tag tag-start">start here</span>
+        <span class="pd">Ranked second, but the right first move: a weekend of work, the only project in the top three of <em>every</em> weighting, and it settles whether live-object passing actually changes how you build before you commit to the bigger one.</span>
+      </span>
+      <span class="ps">3.95</span>
+    </a>
+    <a href="#p02">
+      <span class="pn">#7</span>
+      <span class="pt">MCP aggregator <span class="tag tag-skip">skip for showcase</span>
+        <span class="pd">Last. Useful software, weak argument — MCP is universal, results arrive as data rather than live objects, and the sole distinctive gain is fewer round-trips.</span>
+      </span>
+      <span class="ps">2.45</span>
+    </a>
+  </div>
+
+  <p class="axis-note">So: <strong>rank order 03 → 01</strong>, <strong>build order 01 → 03</strong>. Build 03 first and you are writing a regression harness for agents you have not yet learned to write; build 01 first and you arrive already knowing what your own trace looks like when it goes wrong — which is the thing the harness has to detect.</p>
+
+  <dl class="tldr">
+    <dt>Rank order</dt>
+    <dd><a href="#p03">03</a> → <a href="#p01">01</a> → <a href="#p04">04</a> → <a href="#p05">05</a> → <a href="#p06">06</a> → <a href="#p07">07</a> → <a href="#p02">02</a> &nbsp;<span style="color:var(--ink-faint)">(by value)</span></dd>
+    <dt>Build order</dt>
+    <dd><a href="#p01">01</a> → <a href="#p03">03</a> &nbsp;<span style="color:var(--ink-faint)">(by what teaches you the next step — see <a href="#recommendation">recommendation</a>)</span></dd>
+    <dt>Scored on</dt>
+    <dd>Feature centrality 30% · counterfactual difficulty 30% · compounding impact 25% · low risk 15%. <a href="#weights">Weights are a judgment call — see how the order flips.</a></dd>
+    <dt>Hard constraint</dt>
+    <dd>Three of these run model-generated code. NOOA's AST checks are <a href="#safety">explicitly not a containment boundary</a> — OS-level isolation is required.</dd>
+    <dt>Status</dt>
+    <dd>Source-grounded, not executed. File and line references verified; runtime behaviour inferred from source and docstrings.</dd>
+  </dl>
+
+  <nav class="jump" aria-label="Jump to section">
+    <h3>Jump to</h3>
+    <div class="chips">
+      <a class="wide" href="#unique">What's actually unique</a>
+      <a class="wide" href="#projects">All seven projects</a>
+      <a href="#p01">01 Portfolio</a>
+      <a href="#p02">02 MCP</a>
+      <a href="#p03">03 Trajectory CI</a>
+      <a href="#p04">04 Self-extending</a>
+      <a href="#p05">05 Teams</a>
+      <a href="#p06">06 Ablation</a>
+      <a href="#p07">07 Memory</a>
+      <a class="wide" href="#matrix">Coverage matrix</a>
+      <a class="wide" href="#ranking">Ranking &amp; scoring</a>
+      <a href="#features-ranked">Features ranked</a>
+      <a href="#weights">Alternate weightings</a>
+      <a class="wide" href="#safety">Safety constraint</a>
+      <a class="wide" href="#recommendation">Recommendation</a>
+    </div>
+  </nav>
+</section>
+
+<h2 id="unique">First: what is actually unique here</h2>
+
+<p>"Build something on framework X" is only interesting if the thing you build is hard to build on framework Y. So the projects below are scored against a specific question: <em>does this exercise something NOOA does that LangGraph, CrewAI, or a hand-rolled tool loop does not?</em></p>
+
+<p>Reading the source, six things qualify. Everything else NOOA offers — MCP clients, LiteLLM model routing, Langfuse/Phoenix/OTLP exporters, a memory package — is table stakes across the ecosystem and earns a project no points.</p>
+
+<div class="lever">
+  <h3>A · Agents are Python classes</h3>
+  <p>A metaclass turns fields into state, methods into capabilities, the class docstring into the system prompt, and type annotations into the I/O contract. The practical consequence is that agents inherit, compose, get type-checked, and get unit-tested like any other object.</p>
+  <p class="src">src/nooa/metaclass.py, src/nooa/agent.py</p>
+</div>
+
+<div class="lever">
+  <h3>B · An <code>...</code> body means "an LLM implements this"</h3>
+  <p>Methods whose body is a literal ellipsis become generation methods; methods with real bodies stay deterministic Python. One class holds both, and the visual difference between "this is guessed" and "this is guaranteed" is one token wide.</p>
+  <p class="src">src/nooa/ellipsis_detection.py, src/nooa/metaclass.py</p>
+</div>
+
+<div class="lever">
+  <h3>C · Code as action</h3>
+  <p>The model acts by writing Python into a Jupyter-style REPL that has <code>self</code>, imports, and helpers in scope — not by emitting tool-call JSON. Loops, filters, and intermediate variables come for free, without a schema per operation.</p>
+  <p class="src">src/nooa/strategies/codeact.py; README.md:64</p>
+</div>
+
+<div class="lever">
+  <h3>D · Live objects, passed by reference</h3>
+  <p>The strongest differentiator. Conventional frameworks serialize every tool argument to JSON and hand the model a <em>copy</em>. NOOA puts the real object in the REPL namespace. The model calls methods on the same instance your process is holding, and mutations are simply real.</p>
+  <p class="src">README.md:65 ("live-object arguments passed by reference")</p>
+</div>
+
+<div class="lever">
+  <h3>E · Documentation as a runtime API surface</h3>
+  <p><code>doc(obj)</code> renders any class, function, module, or instance as a prompt-ready contract, expanding referenced types inline and deduplicating them — and the model can call it mid-run to expand detail on demand. <code>Annotated[str, hidden]</code> keeps fields such as API keys out of that rendering entirely.</p>
+  <p class="src">src/nooa/agentdoc/core.py:45, src/nooa/agentdoc/_visibility.py</p>
+</div>
+
+<div class="lever">
+  <h3>F · Total, structured, on-by-default observability</h3>
+  <p>Every LLM call, code execution, and method invocation is traced with parent-child spans, and runs export to ATIF v1.7 — a versioned Pydantic trajectory schema with normative rules on step ordering, joinability, and context-management boundaries. This is not a log file. It is a typed, diffable artifact.</p>
+  <p class="src">src/nooa/tracing/, src/nooa/atif/schema.py</p>
+</div>
+
+<div class="note">
+  <strong>Correction to an earlier claim.</strong> I previously suggested gating a dangerous method by hiding it until a risk check passes. The source does not support that. <code>src/nooa/_visible.py</code> is an explicit no-op kept only for backward compatibility — its own docstring says "everything is visible by default in nooa" — and <code>hidden</code> is a <em>static</em> <code>Annotated[...]</code> marker resolved per class, not a runtime toggle. The right mechanism for guarding a call is <code>MethodPrecondition</code> / <code>MethodPostcondition</code> in <code>src/nooa/strategy_validation.py</code>: preconditions fail fast before generation, and postconditions raising <code>InvariantError</code> are routed back to the model as correctable feedback rather than crashing the run. That is a better fit anyway — the model learns why it was refused.
+</div>
+
+<h2 id="projects">The projects</h2>
+
+<!-- 1 -->
+<div class="project" id="p01">
+  <h3><span class="num">01</span> Portfolio analyst over live objects <span class="effort">Weekend</span></h3>
+
+  <div class="label">What it is</div>
+  <p>An agent class holding your actual position data and broker connection as typed fields — <code>portfolio: DataFrame</code>, <code>broker: Broker</code>, <code>prices: PriceFeed</code> — where analysis happens by the model writing pandas directly against those objects in the REPL.</p>
+
+  <pre><code>class PortfolioAnalyst(Agent, llm=llm):
+    """You analyse a live portfolio and propose rebalances."""
+
+    portfolio: DataFrame
+    broker: Broker
+    api_key: Annotated[str, hidden] = ""   # never rendered into a prompt
+
+    def max_position_pct(self) -> float:    # real body: deterministic
+        return 0.15
+
+    async def propose_rebalance(self, thesis: str) -> RebalancePlan:
+        """Propose a rebalance consistent with the stated thesis."""
+        ...                                  # ellipsis: LLM-driven</code></pre>
+
+  <div class="label">Why it showcases NOOA</div>
+  <p>This is the cleanest demonstration of <strong>D (live objects)</strong> that exists. Consider what the same task costs elsewhere: to let a model compute a rolling correlation, you must anticipate the operation, define a <code>compute_correlation</code> tool with a JSON schema, serialize the frame in, deserialize a result out — and you must do that again for every unanticipated operation. Under <strong>C (code as action)</strong> the model writes three lines of pandas against the frame that already exists in memory. The set of analyses it can perform is no longer bounded by the set you predicted.</p>
+  <p>It also lands <strong>A</strong> and <strong>B</strong> hard, because a portfolio agent is exactly where the deterministic/generated boundary matters most: <code>max_position_pct()</code> has a real body and is therefore a guarantee, while <code>propose_rebalance()</code> has an ellipsis body and is therefore a guess. Encoding "which parts of my trading logic are allowed to be wrong" as a syntactic property of the class is a genuinely different way to reason about risk.</p>
+  <p>Add a <code>MethodPrecondition</code> asserting that no proposed order exceeds <code>max_position_pct()</code>, and a postcondition raising <code>InvariantError</code> on violation, and you get <strong>J</strong>: the model is told <em>why</em> its plan was rejected and retries against the constraint, instead of the run dying.</p>
+
+  <div class="label">What it does not showcase</div>
+  <ul class="feat">
+    <li class="no">Nothing about tracing, memory, skills, or multi-agent structure. It is a single-agent demo.</li>
+    <li class="no">The financial modelling itself is orthogonal — NOOA contributes no domain value here.</li>
+  </ul>
+
+  <div class="verdict"><span class="score s-high">Showcase: high</span> &nbsp;The best single demonstration of the framework's headline feature, and the smallest thing on this list. Run it read-only against a paper account until you have watched a few hundred traces.</div>
+</div>
+
+<!-- 2 -->
+<div class="project" id="p02">
+  <h3><span class="num">02</span> MCP aggregator agent <span class="effort">Weekend</span></h3>
+
+  <div class="label">What it is</div>
+  <p>One agent class with several MCP servers attached as typed fields — mail, calendar, a notes or knowledge store — performing a real recurring job end to end rather than answering one question per server.</p>
+
+  <div class="label">Why it showcases NOOA</div>
+  <p>Partially, and it is worth being precise about which part. MCP support itself is <em>not</em> a NOOA differentiator; every serious framework has a client, and <code>examples/quickstart/11_mcp.py</code> shows a conventional one. The project earns its place on a narrower claim: under conventional tool-calling, combining three servers means three model turns — call mail, get JSON back, reason, call calendar, get JSON back, reason, call notes. Under <strong>C</strong>, the model writes one cell that fetches from all three, filters in Python, joins them on a key, and returns a result. The reasoning happens in code rather than across round-trips, which is fewer tokens, fewer opportunities to lose the thread, and one trace span instead of six.</p>
+  <p>That is a real and measurable benefit. It is also the <em>only</em> unique thing this project demonstrates.</p>
+
+  <div class="label">What it does not showcase</div>
+  <ul class="feat">
+    <li class="no">MCP integration — universal, not distinctive.</li>
+    <li class="no">Typed contracts, live objects, and tracing barely feature; MCP results arrive as data, not as live Python objects, so <strong>D</strong> is untouched.</li>
+    <li class="no">As a framework demonstration it proves little. As a way to learn the API on a task you actually want done, it is excellent.</li>
+  </ul>
+
+  <div class="verdict"><span class="score s-med">Showcase: medium</span> &nbsp;Genuinely useful, thin as an argument for NOOA. Build it to learn the framework, not to justify it.</div>
+</div>
+
+<!-- 3 -->
+<div class="project" id="p03">
+  <h3><span class="num">03</span> Golden-trajectory regression CI for agents <span class="effort">Substantial</span></h3>
+
+  <div class="label">What it is</div>
+  <p>A pytest plugin that captures real agent runs as ATIF trajectories, stores them as fixtures, and — when you change a prompt, swap a model, or switch strategies — replays and diffs <em>behaviour</em>, not just final output. Did it take more steps? Call a different method? Branch elsewhere? Burn 40% more tokens for the same answer?</p>
+
+  <div class="label">Why it showcases NOOA</div>
+  <p>This is the project I would bet on, because it is the one that is genuinely hard to build anywhere else, and the reason is structural rather than incidental.</p>
+  <p>Behavioural regression testing for agents needs three things at once. First, a complete and <em>structured</em> record of what happened — <strong>F</strong> gives you that by default, with parent-child spans preserved across orchestrators, generation methods, and helpers, and with <code>src/nooa/atif/schema.py</code> providing a versioned Pydantic schema whose normative rules (sequential step ids, joinability, context-management boundary semantics) are enforced by tests in the repo. Diffing two typed trajectories is tractable in a way that diffing two log files is not. Second, the agent must be re-instantiable in a test harness with dependencies substituted — which <strong>A</strong> gives you free, because the agent is a class and the test is just <code>pytest</code>. Third, deterministic replay of non-model state, which the event-sourced storage layer (<code>src/nooa/storage/</code>, snapshots) supports.</p>
+  <p>Most frameworks give you at most one of the three. Tracing is usually an add-on exporter producing spans shaped for a dashboard, not for assertion; agents are usually graph configurations rather than objects, so there is nothing clean to instantiate; and state is usually held in a runner you cannot snapshot.</p>
+  <p>The wider point is that prompt engineering is currently done by vibes, because nobody can see regressions. A tool that fails CI on "this prompt edit made the agent call the database twice as often" would be useful to everyone building on the framework.</p>
+
+  <div class="label">Honest caveat</div>
+  <p><code>packages/nooa-bench/src/nooa_bench/trace_analyzer.py</code> already exists, as do <code>runner.py</code> and <code>protocol.py</code>, and <code>examples/quickstart/14_atif_trajectory.py</code> demonstrates export. So this is <em>extending an existing foundation</em>, not inventing from nothing. Read those three files before scoping — the honest version of this project might be "add trajectory diffing and a pytest fixture API to nooa-bench," which is smaller and more likely to be upstreamed.</p>
+
+  <div class="verdict"><span class="score s-high">Showcase: highest</span> &nbsp;Exercises A, F, and event-sourced storage together, and each one is load-bearing. Also makes every other project on this list easier to iterate on.</div>
+</div>
+
+<!-- 4 -->
+<div class="project" id="p04">
+  <h3><span class="num">04</span> Self-extending domain expert <span class="effort">Substantial</span></h3>
+
+  <div class="label">What it is</div>
+  <p>An agent that, on completing a task it found difficult, writes the procedure down as a reusable capability and loads it next time. Facts go to long-term memory; <em>procedures</em> become code.</p>
+
+  <div class="label">Why it showcases NOOA</div>
+  <p>Because the framework ships explicit affordances for exactly this, which is unusual. <code>src/nooa/tools/method_writing_lib.py</code> defines a <code>MethodWriting</code> skill whose docstring instructs the model to define helper functions at the top of a REPL cell — and, more interestingly, to decorate standalone async functions with <code>@strategy(PredictStrategy())</code> and an ellipsis body to create <em>per-item LLM sub-calls fanned out through <code>asyncio.gather</code></em>. The agent is not merely writing helper code; it is authoring new generation methods at runtime and parallelising them. That is <strong>B</strong> and <strong>C</strong> composing in a way that has no clean analogue in a tool-calling framework, where a new capability means a new schema registered out-of-band.</p>
+  <p><code>library_writing_lib.py</code> sits alongside it for persisting capabilities beyond a single cell, the <code>skills/nooa-self-extending/</code> skill documents the pattern, and <code>DynamicMethodAdditionError</code> is a first-class error type in <code>src/nooa/errors</code> — a good sign that dynamic method addition is a supported path with defined failure modes rather than an accident.</p>
+  <p>Pair it with <code>nooa-memory</code>, whose module list (<code>retrieval.py</code>, <code>reflection.py</code>, <code>forgetting.py</code>, <code>generative.py</code>) is more opinionated than a bare vector store. Then instrument the thing that actually matters: skills written, skills reused, and tokens-per-task over weeks. That last chart is the entire project — without it you have an agent that accumulates clutter and no evidence it is learning.</p>
+
+  <div class="label">What it does not showcase</div>
+  <ul class="feat">
+    <li class="no">Memory subsystems are common across frameworks; the memory half earns no distinctiveness points.</li>
+    <li>The self-extension half is where the novelty is concentrated.</li>
+  </ul>
+
+  <div class="verdict"><span class="score s-high">Showcase: high</span> &nbsp;Highest ceiling, highest risk of producing an impressive demo with no measurable improvement. The instrumentation is not optional.</div>
+</div>
+
+<!-- 5 -->
+<div class="project" id="p05">
+  <h3><span class="num">05</span> Multi-agent teams by composition, not message bus <span class="effort">Substantial</span></h3>
+
+  <div class="label">What it is</div>
+  <p>A small team — say author, reviewer, and integrator — where one agent holds another as a typed field and invokes it as a method: <code>await self.reviewer.critique(patch)</code>. No router, no message schema, no graph definition.</p>
+
+  <div class="label">Why it showcases NOOA</div>
+  <p>It is the sharpest available test of the framework's central claim. If agents really are ordinary Python objects (<strong>A</strong>), then multi-agent orchestration should reduce to ordinary composition, and the entire category of orchestration machinery that other frameworks sell — routers, state graphs, message protocols, handoff schemas — should evaporate into method calls. Nothing else on this list puts the thesis so directly at risk.</p>
+  <p>Two secondary features carry real weight here. <strong>D</strong> means the author agent can hand the reviewer a <em>live</em> object rather than a serialized summary, so the reviewer inspects the same artifact rather than a lossy description of it. And <strong>F</strong>'s parent-child spans mean a nested agent call appears as a nested span, so the trace of a three-agent run reads as a call tree — which is what it actually is.</p>
+
+  <div class="label">The honest risk</div>
+  <p>Composition may relocate complexity rather than remove it. Message buses exist partly to solve problems that method calls do not address: retry and backoff at a boundary, cycle detection, concurrency between peers, and observability of a handoff. If you find yourself writing a coordinator class that dispatches, tracks status, and retries, you have rebuilt an orchestrator with worse ergonomics — and that negative result is worth writing up, because it bounds the claim. Build the equivalent in one graph-based framework and compare debuggability honestly rather than charitably.</p>
+
+  <div class="verdict"><span class="score s-med">Showcase: medium-high</span> &nbsp;The most falsifiable project here, which is a compliment. Its value holds whichever way the result goes.</div>
+</div>
+
+<!-- 6 -->
+<div class="project" id="p06">
+  <h3><span class="num">06</span> Harness-ablation study on open models <span class="effort">Research</span></h3>
+
+  <div class="label">What it is</div>
+  <p>Take an open model at two or three sizes, run one benchmark, and ablate the harness: context blocks on/off, summarization on/off, skills on/off, CodeAct versus Predict versus Prefill. The question worth answering is whether harness capability substitutes for parameter count — and where that substitution breaks down.</p>
+
+  <div class="label">Why it showcases NOOA</div>
+  <p>The repo is built for it. <code>src/nooa/strategies/</code> contains <code>codeact.py</code>, <code>predict.py</code>, <code>pure_python.py</code>, <code>prefill.py</code>, and <code>composite.py</code> behind a common <code>GenerationStrategy</code> base with <code>set_default_strategy()</code>, so swapping the reasoning loop is a config change rather than a rewrite — that is the ablation axis handed to you. <code>src/nooa/context_blocks/</code> and the skill registry give two more axes. <code>packages/nooa-bench</code> supplies <code>BenchAgent</code> and a runner, and <code>util/eval_pipeline</code> the scoring. The repo's own framing — a paper and a blog post on harness capabilities and model performance — means there is a baseline to compare against rather than a vacuum.</p>
+  <p>Local models are first-class: Ollama and vLLM are both supported through LiteLLM with no API key, so a full ablation grid costs GPU time rather than inference spend. That matters when the design calls for dozens of runs per cell to get error bars.</p>
+
+  <div class="label">Two caveats before you scope it</div>
+  <ul>
+    <li><code>CodeActLiteStrategy</code> and <code>ReflexionStrategy</code> are <strong>experimental</strong> and deliberately gated behind a <code>FutureWarning</code> in <code>src/nooa/__init__.py</code> — they are re-exported lazily through <code>nooa.experimental</code> precisely so the warning cannot be bypassed. Ablations involving them sit on an unstable API and may not reproduce across versions.</li>
+    <li>Ablation is generic methodology. NOOA makes it <em>cheap</em>, which is a real contribution to your time budget, but the study does not demonstrate anything architecturally unique about the framework.</li>
+  </ul>
+
+  <div class="verdict"><span class="score s-med">Showcase: medium</span> &nbsp;<span class="score s-high" style="margin-left:0.3rem">Research value: high</span> &nbsp;Publishable shape, modest framework-differentiation. Pick it for the result, not the demo.</div>
+</div>
+
+<!-- 7 -->
+<div class="project" id="p07">
+  <h3><span class="num">07</span> Cross-episode memory for the existing benchmark agents <span class="effort">Research</span></h3>
+
+  <div class="label">What it is</div>
+  <p><code>examples/arc_agi_3/</code> and <code>examples/cybergym/</code> are already in the repo, each with configs, skills, and tests. Both currently start each episode cold. The experiment: give the agent memory that persists across episodes and measure whether it transfers.</p>
+
+  <div class="label">Why it showcases NOOA</div>
+  <p>Modestly, and mostly by combining <code>nooa-memory</code> with the event-sourced snapshot layer to carry state across runs. ARC is the more interesting target because its puzzles are deliberately designed to resist transfer — a positive result there would be a real finding, and a negative one is informative rather than embarrassing. <code>trace_analyzer.py</code> in <code>nooa-bench</code> gives you the measurement apparatus without building it.</p>
+
+  <div class="label">What it does not showcase</div>
+  <ul class="feat">
+    <li class="no">Cross-episode memory is a well-trodden research direction, not a NOOA capability.</li>
+    <li class="no">You are extending existing examples, so relatively little of the framework surface gets touched.</li>
+  </ul>
+
+  <div class="verdict"><span class="score s-low">Showcase: low</span> &nbsp;Lowest novelty, lowest risk, fastest to a result because the scaffolding exists. A reasonable warm-up before project 06.</div>
+</div>
+
+<h2 id="matrix">Feature coverage at a glance</h2>
+
+<div class="scroller">
+<table>
+  <thead>
+    <tr>
+      <th>Project</th>
+      <th>A<br>Classes</th>
+      <th>B<br><code>...</code></th>
+      <th>C<br>CodeAct</th>
+      <th>D<br>Live obj</th>
+      <th>E<br>doc()</th>
+      <th>F<br>ATIF</th>
+      <th>Unique?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>01 Portfolio analyst</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="p">◐</td><td class="n">○</td><td class="y">High</td></tr>
+    <tr><td>02 MCP aggregator</td><td class="p">◐</td><td class="p">◐</td><td class="y">●</td><td class="n">○</td><td class="n">○</td><td class="n">○</td><td class="p">Medium</td></tr>
+    <tr><td>03 Trajectory CI</td><td class="y">●</td><td class="n">○</td><td class="n">○</td><td class="n">○</td><td class="n">○</td><td class="y">●</td><td class="y">Highest</td></tr>
+    <tr><td>04 Self-extending</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="p">◐</td><td class="y">●</td><td class="p">◐</td><td class="y">High</td></tr>
+    <tr><td>05 Composed teams</td><td class="y">●</td><td class="y">●</td><td class="p">◐</td><td class="y">●</td><td class="n">○</td><td class="y">●</td><td class="p">Med-high</td></tr>
+    <tr><td>06 Harness ablation</td><td class="p">◐</td><td class="y">●</td><td class="y">●</td><td class="n">○</td><td class="n">○</td><td class="y">●</td><td class="p">Medium</td></tr>
+    <tr><td>07 Cross-episode memory</td><td class="p">◐</td><td class="n">○</td><td class="p">◐</td><td class="n">○</td><td class="n">○</td><td class="p">◐</td><td class="n">Low</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="legend">● central to the project &nbsp;·&nbsp; ◐ used but incidental &nbsp;·&nbsp; ○ not exercised. "Unique?" answers: how hard would this be on another framework?</p>
+
+<h2 id="ranking">Ranking, and why</h2>
+
+<p>A ranking is only as good as the axis it sorts on, and the obvious axis — "showcases the most NOOA features" — is the wrong one. Counting features rewards breadth over depth, and a project that touches six features incidentally is worth less than one that makes two features load-bearing. So the ranking below is built in two steps: rank the <em>features</em> by how much they matter, then rank the projects by how centrally they use the features that matter most.</p>
+
+<h3 id="features-ranked">Step 1 — Not all six leverage points are equally valuable</h3>
+
+<p>The critical distinction, and the one most write-ups of this framework miss, is that <strong>uniqueness and impact are different axes</strong>. Some of NOOA's best ideas are not original to it, and some of its most original ideas are not that consequential. Sorting by "importance" means weighing both.</p>
+
+<div class="rank-row top">
+  <div class="rank-n">1</div>
+  <div>
+    <div class="rank-name">A · Agents are Python classes</div>
+    <p class="rank-why">Most important, because it is load-bearing for everything else. B is syntax on top of it, D is only possible because <code>self</code> is a real object in scope, and the testability that makes project 03 viable falls out of it for free. On its own it looks like an ergonomic preference; structurally it is the axiom the rest of the framework is derived from. Moderately unique — DSPy has module classes, but does not unify state, prompt, and I/O contract into one declaration.</p>
+  </div>
+  <div class="rank-score">High <span>impact</span></div>
+</div>
+
+<div class="rank-row top">
+  <div class="rank-n">2</div>
+  <div>
+    <div class="rank-name">D · Live objects passed by reference</div>
+    <p class="rank-why">Most <em>unique</em>. Frameworks that support code-as-action mostly still hand the model serialized data; putting the caller's actual in-memory instance in the REPL namespace, mutations and all, is rare. It also has the highest ratio of behaviour change to explanation length — one sentence describes it, and it removes an entire category of stale-copy bugs. Ranked below A only because it depends on A to exist.</p>
+  </div>
+  <div class="rank-score">High <span>uniqueness</span></div>
+</div>
+
+<div class="rank-row">
+  <div class="rank-n">3</div>
+  <div>
+    <div class="rank-name">F · ATIF trajectories and always-on tracing</div>
+    <p class="rank-why">The most underrated. Tracing is universal, so the instinct is to discount it — but a <em>versioned Pydantic schema with enforced normative rules</em> is a different artifact from a span exporter aimed at a dashboard. One you can assert against in a test; the other you can only look at. That difference is what makes the highest-ranked project possible at all.</p>
+  </div>
+  <div class="rank-score">High <span>impact</span></div>
+</div>
+
+<div class="rank-row">
+  <div class="rank-n">4</div>
+  <div>
+    <div class="rank-name">C · Code as action</div>
+    <p class="rank-why">Very high impact, <strong>but not unique</strong> — and this is where honest scoring bites. The CodeAct pattern is published prior art and ships in other libraries, notably smolagents. NOOA executes it well and wires it to <code>self</code>, but a project whose entire argument is "the model writes Python" is not an argument for <em>this</em> framework. Discounted accordingly, which is what pushes project 02 to the bottom.</p>
+  </div>
+  <div class="rank-score">Med <span>uniqueness</span></div>
+</div>
+
+<div class="rank-row">
+  <div class="rank-n">5</div>
+  <div>
+    <div class="rank-name">B · Ellipsis bodies mark generated methods</div>
+    <p class="rank-why">Genuinely clarifying — encoding "this part is allowed to be wrong" as a one-token syntactic property is a good idea with real review and audit value. But it is sugar over A, and no project succeeds or fails on it.</p>
+  </div>
+  <div class="rank-score">Med <span>impact</span></div>
+</div>
+
+<div class="rank-row">
+  <div class="rank-n">6</div>
+  <div>
+    <div class="rank-name">E · <code>doc()</code> progressive disclosure</div>
+    <p class="rank-why">Real engineering, supporting role. It solves context bloat, which matters at scale, but it is a token-efficiency mechanism rather than a capability. Notably it is central to only one project on this list — either a gap in the list, or confirmation that it is infrastructure rather than a headline.</p>
+  </div>
+  <div class="rank-score">Low <span>standalone</span></div>
+</div>
+
+<h3>Step 2 — Scoring the projects</h3>
+
+<p>Four criteria, weighted. <strong>Feature centrality (30%)</strong>: does it make the high-ranked features load-bearing rather than incidental? <strong>Counterfactual difficulty (30%)</strong>: how hard would this be on another framework — the real test of "showcase"? <strong>Compounding impact (25%)</strong>: does finishing it make other work easier, or help anyone but you? <strong>Low cost and risk (15%)</strong>: effort, and the odds of ending with nothing.</p>
+
+<div class="scroller">
+<table>
+  <thead>
+    <tr>
+      <th>#</th><th>Project</th>
+      <th>Centrality<br>×0.30</th><th>Counterfactual<br>×0.30</th>
+      <th>Compounding<br>×0.25</th><th>Low risk<br>×0.15</th><th>Score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>03</td><td>Trajectory CI</td><td class="p">4</td><td class="y">5</td><td class="y">5</td><td class="n">2</td><td class="y">4.25</td></tr>
+    <tr><td>01</td><td>Portfolio analyst</td><td class="y">5</td><td class="p">4</td><td class="n">2</td><td class="y">5</td><td class="y">3.95</td></tr>
+    <tr><td>04</td><td>Self-extending expert</td><td class="y">5</td><td class="p">4</td><td class="p">3</td><td class="n">2</td><td class="p">3.75</td></tr>
+    <tr><td>05</td><td>Composed teams</td><td class="p">4</td><td class="p">3</td><td class="p">4</td><td class="p">3</td><td class="p">3.55</td></tr>
+    <tr><td>06</td><td>Harness ablation</td><td class="p">3</td><td class="n">2</td><td class="p">4</td><td class="n">2</td><td class="n">2.80</td></tr>
+    <tr><td>07</td><td>Cross-episode memory</td><td class="n">2</td><td class="n">2</td><td class="p">3</td><td class="p">4</td><td class="n">2.55</td></tr>
+    <tr><td>02</td><td>MCP aggregator</td><td class="n">2</td><td class="n">2</td><td class="n">2</td><td class="y">5</td><td class="n">2.45</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="legend">Scores are 1–5 per criterion. The weights are a judgment call, not a measurement — see "if you disagree with the weights" below.</p>
+
+<h3>The ranking, with the reasoning</h3>
+
+<div class="rank-row top">
+  <div class="rank-n">1</div>
+  <div>
+    <div class="rank-name">03 · Golden-trajectory regression CI &nbsp;<span class="score s-high">4.25</span></div>
+    <p class="rank-why">Wins on the two heaviest criteria at once. Counterfactually it is the hardest thing on this list to build elsewhere, and for a structural reason rather than a convenience one: it needs typed trajectories, always-on nested tracing, and re-instantiable agents <em>simultaneously</em>, and most frameworks supply at most one. It also compounds — every other project becomes measurable instead of anecdotal once it exists, and it is plausibly upstreamable given how much of <code>nooa-bench</code> is already there.</p>
+    <p class="rank-why"><strong>Why it wins despite not touching D or C at all:</strong> this is the case for ranking by centrality rather than by feature count. It exercises only two of the six leverage points — but both are load-bearing, one is the framework's axiom and the other its most underrated asset, and the project would be impossible if either were absent. Compare project 02, which touches more surface area and demonstrates almost nothing.</p>
+    <div class="bar"><i style="width:85%"></i></div>
+  </div>
+  <div class="rank-score">1st</div>
+</div>
+
+<div class="rank-row">
+  <div class="rank-n">2</div>
+  <div>
+    <div class="rank-name">01 · Portfolio analyst over live objects &nbsp;<span class="score s-high">3.95</span></div>
+    <p class="rank-why">The best pure <em>showcase</em>, and the only project scoring 5 on centrality: A, B, C, and D are all load-bearing, and D — the single most unique feature — is the entire point. It loses first place solely on compounding impact, because it is a personal tool that helps nobody else. Note the tension this exposes: <strong>if you rank by "showcases the most unique feature," this is first, not 03.</strong> The weights, not the evidence, decide between them.</p>
+    <div class="bar"><i style="width:79%"></i></div>
+  </div>
+  <div class="rank-score">2nd</div>
+</div>
+
+<div class="rank-row">
+  <div class="rank-n">3</div>
+  <div>
+    <div class="rank-name">04 · Self-extending domain expert &nbsp;<span class="score s-med">3.75</span></div>
+    <p class="rank-why">Ties project 01 on centrality — an agent authoring new generation methods at runtime and fanning them out through <code>asyncio.gather</code> composes B, C, and E in a way tool-calling frameworks cannot express, since there a new capability means a schema registered out-of-band. It ranks third only on risk. This is the project most likely to yield a striking demo and no measurable improvement, and unlike the others that failure mode is invisible unless you instrument tokens-per-task from day one.</p>
+    <div class="bar"><i style="width:75%"></i></div>
+  </div>
+  <div class="rank-score">3rd</div>
+</div>
+
+<div class="rank-row">
+  <div class="rank-n">4</div>
+  <div>
+    <div class="rank-name">05 · Composed teams &nbsp;<span class="score s-med">3.55</span></div>
+    <p class="rank-why">Scores well on compounding because the <em>result</em> is the deliverable — it bounds the framework's central claim either way, and a negative result ("composition relocates orchestration complexity rather than removing it") is as useful as a positive one. Held back on counterfactual difficulty by an awkward fact: composing objects is just Python, so the build is easy and the <em>experiment</em> is what carries the value. That makes it the most falsifiable project here and the one whose worth least depends on it succeeding.</p>
+    <div class="bar"><i style="width:71%"></i></div>
+  </div>
+  <div class="rank-score">4th</div>
+</div>
+
+<div class="rank-row">
+  <div class="rank-n">5</div>
+  <div>
+    <div class="rank-name">06 · Harness ablation &nbsp;<span class="score s-low">2.80</span></div>
+    <p class="rank-why">The clearest case of the two axes diverging. Research value is high and the result would be genuinely interesting, but ablation is generic methodology — NOOA makes it cheap rather than possible, so counterfactual difficulty scores low. Two of the ablation arms also sit on experimental, <code>FutureWarning</code>-gated strategies. Pick this for the finding, not the demonstration.</p>
+    <div class="bar"><i style="width:56%"></i></div>
+  </div>
+  <div class="rank-score">5th</div>
+</div>
+
+<div class="rank-row">
+  <div class="rank-n">6</div>
+  <div>
+    <div class="rank-name">07 · Cross-episode memory &nbsp;<span class="score s-low">2.55</span></div>
+    <p class="rank-why">Ranks low on every axis except risk, where existing scaffolding in <code>examples/arc_agi_3/</code> gives it a genuine edge. Cross-episode memory is a well-trodden research direction and touches little of the framework. Reasonable as a warm-up for 06; weak as a destination.</p>
+    <div class="bar"><i style="width:51%"></i></div>
+  </div>
+  <div class="rank-score">6th</div>
+</div>
+
+<div class="rank-row">
+  <div class="rank-n">7</div>
+  <div>
+    <div class="rank-name">02 · MCP aggregator &nbsp;<span class="score s-low">2.45</span></div>
+    <p class="rank-why">Last, and the ranking earns its keep here by saying so. This is the project most likely to feel productive and prove least — MCP support is universal, the results arrive as data rather than live objects so D is untouched, and the sole distinctive benefit is that CodeAct collapses three round-trips into one cell. Genuinely useful software; not an argument for the framework. Its 5 on low-risk is the only thing keeping it off the floor.</p>
+    <div class="bar"><i style="width:49%"></i></div>
+  </div>
+  <div class="rank-score">7th</div>
+</div>
+
+<h3 id="weights">If you disagree with the weights</h3>
+
+<p>The weights encode a specific goal — "demonstrate what makes NOOA different, and leave something useful behind." Under different goals the order changes, and it is worth seeing how much:</p>
+
+<div class="flip">
+  <div>
+    <h4>Optimise for showcase only</h4>
+    <ol>
+      <li><strong>01</strong> — Portfolio analyst</li>
+      <li><strong>04</strong> — Self-extending</li>
+      <li><strong>03</strong> — Trajectory CI</li>
+    </ol>
+  </div>
+  <div>
+    <h4>Optimise for shipping this week</h4>
+    <ol>
+      <li><strong>01</strong> — Portfolio analyst</li>
+      <li><strong>02</strong> — MCP aggregator</li>
+      <li><strong>07</strong> — Cross-episode memory</li>
+    </ol>
+  </div>
+  <div>
+    <h4>Optimise for a publishable result</h4>
+    <ol>
+      <li><strong>06</strong> — Harness ablation</li>
+      <li><strong>05</strong> — Composed teams</li>
+      <li><strong>03</strong> — Trajectory CI</li>
+    </ol>
+  </div>
+</div>
+
+<p>Only project <strong>01</strong> appears in the top three of every ordering, including the weighted one. That is a stronger endorsement than its second-place score suggests, and it is the reason the recommendation below hedges the way it does.</p>
+
+<h2 id="safety">One constraint that is not optional</h2>
+
+<div class="note">
+  The README is blunt about this at lines 130–133, and it deserves repeating because three of these projects run generated code against real systems. NOOA validates generated code with AST checks and applies module deny-lists — but the README calls these <strong>"defense-in-depth guardrails, not a containment boundary."</strong> Its reasoning is worth internalising: a static checker over Python cannot provide containment, because <code>open()</code> gives arbitrary file access, <code>importlib</code> loads modules straight from a path, and reflection reaches the rest.
+  <br><br>
+  The containment boundary is OS-level isolation — a container, a VM, or NVIDIA OpenShell. For projects 01 and 02 in particular, where the agent touches a broker or a real inbox, that means a container plus credentials scoped to read-only until the traces have earned your trust.
+</div>
+
+<h2 id="recommendation">Recommendation</h2>
+
+<p>Do <strong>01 then 03</strong>, in that order — and the ranking is what argues for the sequence rather than against it.</p>
+
+<p><strong>01, the portfolio analyst</strong>, is the only project in the top three of every ordering above. It is a weekend of work, it makes the framework's most unique feature the entire point, and it answers the question you should settle before investing further: does passing live objects into the model's REPL actually change how you build, or is the object-oriented framing an aesthetic preference? That is cheap to find out and expensive to assume.</p>
+
+<p><strong>03, the trajectory regression harness</strong>, is the weighted winner and the real destination. It is the one place where NOOA's design gives you something structurally hard to build elsewhere — typed ATIF trajectories, always-on parent-child tracing, and plain-class agents are each common enough alone and rare in combination. It helps anyone else building on the framework, it is plausibly upstreamable into <code>nooa-bench</code>, and it converts every subsequent experiment from anecdote into measurement.</p>
+
+<p>The sequencing matters more than it looks: build 03 first and you will be writing a regression harness for agents you have not yet learned to write. Build 01 first and you arrive at 03 already knowing what a trace of your own agent looks like when it goes wrong — which is precisely the thing the harness has to detect.</p>
+
+<footer>
+  Compiled from a source read of <code>labs-OO-Agents</code>. File and line references were checked against the working tree; behavioural claims are inferred from source and docstrings and have not been verified by execution. Apache 2.0 framework; project ideas unencumbered.
+</footer>
+
+</div>
+</body>
+</html>
